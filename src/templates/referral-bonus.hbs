@@ -1,0 +1,97 @@
+<html>
+	<head>
+		<meta charset='utf-8' />
+		<style>
+			body {
+				font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+				background-color: #f4f7f9;
+				margin: 0;
+				padding: 0;
+			}
+			.container {
+				max-width: 600px;
+				margin: 20px auto;
+				background: #ffffff;
+				border-radius: 12px;
+				overflow: hidden;
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+			}
+			.header {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				padding: 40px 20px;
+				text-align: center;
+				color: white;
+			}
+			.header h1 {
+				margin: 0;
+				font-size: 28px;
+				letter-spacing: 1px;
+			}
+			.content {
+				padding: 30px;
+				text-align: center;
+				color: #4a5568;
+				line-height: 1.6;
+			}
+			.bonus-badge {
+				display: inline-block;
+				background: #ebf8ff;
+				color: #2b6cb0;
+				border: 2px dashed #4299e1;
+				border-radius: 50px;
+				padding: 10px 25px;
+				font-weight: bold;
+				font-size: 24px;
+				margin: 20px 0;
+			}
+			.friend-list {
+				background: #f7fafc;
+				border-radius: 8px;
+				padding: 15px;
+				margin-top: 20px;
+				text-align: left;
+			}
+			.cta-button {
+				display: inline-block;
+				padding: 14px 30px;
+				background-color: #48bb78;
+				color: white;
+				text-decoration: none;
+				border-radius: 6px;
+				font-weight: bold;
+				margin-top: 25px;
+			}
+			.footer {
+				padding: 20px;
+				text-align: center;
+				color: #a0aec0;
+				font-size: 12px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class='container'>
+			<div class='header'>
+				<h1>High Five! 🙌</h1>
+			</div>
+			<div class='content'>
+				<h2>You've just earned a bonus!</h2>
+				<p>Great news,
+					<b>{{name}}</b>! Your friends have officially joined our premium
+					community. As a token of our appreciation, we've credited your account
+					with:</p>
+
+				<div class='bonus-badge'>
+					+$5.00 USD
+				</div>
+
+				<p>This credit will be automatically applied to your next subscription
+					renewal. You don't have to do a thing except keep being awesome!</p>
+			</div>
+			<div class='footer'>
+				<p>Thank you for growing with us!<br />
+					© 2026</p>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,35 @@
+version: '3.3'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: fl_studio
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: fl_studio_data
+      PGDATA: /var/lib/postgresql/data/fl_studio
+    ports:
+      - "5430:5432"
+    # volumes:
+    #   - ./pgdata:/var/lib/postgresql/data/fl_studio
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d postgres_db" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+
+volumes:
+  pgdata:
+    driver: local

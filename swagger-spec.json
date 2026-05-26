@@ -1,0 +1,1345 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "JSON with login and password for registration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User has been successfully registered",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "User is already registered or incorrect property",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "USER_ALREADY_REGISTERED": {
+                    "summary": "This user is already registered",
+                    "value": {
+                      "message": "This user is already registered",
+                      "error": "Bad Request",
+                      "statusCode": 400
+                    }
+                  },
+                  "PROPERTY_SHOULD_NOT_EXIST": {
+                    "summary": "property should not exist",
+                    "value": {
+                      "message": "Property role should not exist",
+                      "error": "Bad Request",
+                      "statusCode": 400
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send your password and email as login for registration in the body of the request",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "JSON with login and password for Login",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User successfully logged in",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unauthorized or incorrect property",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "USER_NOT_FOUND_ERROR": {
+                    "summary": "No user with this email found",
+                    "value": {
+                      "message": "No user with this email found",
+                      "error": "Unauthorized",
+                      "statusCode": 401
+                    }
+                  },
+                  "PROPERTY_SHOULD_NOT_EXIST": {
+                    "summary": "property should not exist",
+                    "value": {
+                      "message": "Property role should not exist",
+                      "error": "Bad Request",
+                      "statusCode": 400
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid password",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "WRONG_PASSWORD_ERROR": {
+                    "summary": "Invalid password",
+                    "value": {
+                      "message": "Invalid password",
+                      "error": "Unauthorized",
+                      "statusCode": 401
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "send your password and email as login in the request body",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Getting user profile",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "3dfb8f08-d5ca-472c-93b6-187e796b9225",
+                  "email": "test@gmail.com",
+                  "subscription": "free",
+                  "stripeCustomerId": null,
+                  "maxFolderSize": 104857600,
+                  "currentTotalFolderSize": 54857600
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send your access_token as a BEARER token to headers authorization to get user profile",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Get new access and refresh token",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "refresh_token": []
+          }
+        ],
+        "summary": "Send old refresh_token as a BEARER token to headers authorization to get new access token and refresh token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/signout": {
+      "post": {
+        "operationId": "AuthController_signOut",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Log out"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send the access_token as a BEARER token for authorization headers to log out of the account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/google/login": {
+      "get": {
+        "operationId": "AuthController_googleLogin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Endpoint for registration and login using google account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleCallback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Endpoint to which redirection will occur after Google confirms the login. It will receive all the necessary data, create a user and redirect to the client page with the addition of searchParameters",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/stripe/products": {
+      "get": {
+        "operationId": "StripeController_getPricesAndProducts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Token is valid, return products",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "id": "price_3R7DIGJfg0ar1hBiEIWUmKUE",
+                    "object": "price",
+                    "active": true,
+                    "billing_scheme": "per_unit",
+                    "created": 3743069852,
+                    "currency": "usd",
+                    "custom_unit_amount": null,
+                    "livemode": false,
+                    "lookup_key": null,
+                    "metadata": {},
+                    "nickname": null,
+                    "product": {
+                      "id": "prod_S3Fn74iqLAIZc9",
+                      "object": "product",
+                      "active": true,
+                      "attributes": [],
+                      "created": 1743069852,
+                      "default_price": "price_3R7DIGJfg0ar1hBiEIWUmKUE",
+                      "description": "Professional subscription",
+                      "images": [],
+                      "livemode": false,
+                      "marketing_features": [],
+                      "metadata": {},
+                      "name": "Pro",
+                      "package_dimensions": null,
+                      "shippable": null,
+                      "statement_descriptor": null,
+                      "tax_code": null,
+                      "type": "service",
+                      "unit_label": null,
+                      "updated": 3743069853,
+                      "url": null
+                    },
+                    "recurring": {
+                      "aggregate_usage": null,
+                      "interval": "month",
+                      "interval_count": 1,
+                      "meter": null,
+                      "trial_period_days": null,
+                      "usage_type": "licensed"
+                    },
+                    "tax_behavior": "unspecified",
+                    "tiers_mode": null,
+                    "transform_quantity": null,
+                    "type": "recurring",
+                    "unit_amount": 200,
+                    "unit_amount_decimal": "200"
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "description": "Will not transfer user token",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get all products",
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/stripe/checkout": {
+      "post": {
+        "operationId": "StripeController_checkout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "object with key \"type\" and value corresponding to the priceId of the product",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "url": "https://checkout.stripe.com/c/pay"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No such price",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "message": "No such price: 'price_3R7DIGJfg0ar1hBiEIWUmKUE'"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request body not added",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Request for creating a subscription. We receive the address to which we need redirect. You need to add the selected subscription ID and user access_token to the header",
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/stripe/success": {
+      "get": {
+        "operationId": "StripeController_success",
+        "parameters": [
+          {
+            "name": "session_id",
+            "required": true,
+            "in": "query",
+            "description": "Session id query params",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User data updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such checkout.session",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "No such checkout.session: cs_test_a1F5GFpLTPnbBoB8mZ4rasgsrlWJDHcv70Gx5yfCQfFRZy9TbdHdU"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "After the operation checkout (breakpoint \"checkout\") redirects us to the user page which is responsible for a successful subscription. On they we make a request for the current breakpoint (success) and as searchParams session_id we pass the session_id obtained from the URL string by which we will receive a session with the current subscription and make changes to the user table",
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/stripe/customer": {
+      "get": {
+        "operationId": "StripeController_customerInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Customer not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Customer not found",
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "ENOENT: no such file or directory, stat '/home/example/index.html'",
+                  "error": "Not Found",
+                  "statusCode": 404
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Request to get the URL, so that later you can go to it and end up on a page with information about the user's subscription and the ability to unsubscribe. Need to send access token in header",
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/stripe/webhook": {
+      "post": {
+        "operationId": "StripeController_webhook",
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/posts": {
+      "post": {
+        "operationId": "PostsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Post created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "0673b8af-5e55-4ad7-a246-6120ac62c2cf",
+                  "contentHtml": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>",
+                  "createdAt": "2026-01-05T09:29:41.141Z",
+                  "updatedAt": "2026-01-05T09:29:41.141Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Required fields are missing",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": [
+                    "contentHtml must be a string"
+                  ],
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create a post",
+        "tags": [
+          "Posts"
+        ]
+      },
+      "get": {
+        "operationId": "PostsController_findAll",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of elements per page (optional)",
+            "schema": {
+              "example": 10
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (optional)",
+            "schema": {
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get posts",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 1,
+                  "rows": [
+                    {
+                      "id": "0673b8af-5e55-4ad7-a246-6120ac62c2cf",
+                      "contentHtml": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>",
+                      "createdAt": "2026-01-05T09:29:41.141Z",
+                      "updatedAt": "2026-01-05T09:29:41.141Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Error message",
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all posts",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/api/posts/{id}": {
+      "get": {
+        "operationId": "PostsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get post",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "0673b8af-5e55-4ad7-a246-6120ac62c2cf",
+                  "contentHtml": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>",
+                  "createdAt": "2026-01-05T09:29:41.141Z",
+                  "updatedAt": "2026-01-05T09:29:41.141Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Error message",
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one posts",
+        "tags": [
+          "Posts"
+        ]
+      },
+      "patch": {
+        "operationId": "PostsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Форма создания поста с файлами",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contentHtml": {
+                    "type": "string",
+                    "example": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>"
+                  }
+                },
+                "required": [
+                  "contentHtml"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Post updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "0673b8af-5e55-4ad7-a246-6120ac62c2cf",
+                  "contentHtml": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>",
+                  "createdAt": "2026-01-05T09:29:41.141Z",
+                  "updatedAt": "2026-01-05T09:29:41.141Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Error message",
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Edit post",
+        "tags": [
+          "Posts"
+        ]
+      },
+      "delete": {
+        "operationId": "PostsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete file",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "message": "the post ff6a1126-5397-41e0-8f36-bec68f3b8a9a was deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Error message",
+                  "error": "Bad Request",
+                  "statusCode": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Delete post",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/api/user": {
+      "get": {
+        "operationId": "UserController_getAll",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "User limit",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get users",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 3,
+                  "rows": [
+                    {
+                      "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
+                      "email": "user2@gmail.com",
+                      "subscription": "free",
+                      "maxFolderSize": 50,
+                      "createdAt": "2026-01-05T10:46:01.740Z"
+                    },
+                    {
+                      "id": "c36825e1-1c05-4274-91b1-37489d268709",
+                      "email": "user@gmail.com",
+                      "subscription": "free",
+                      "maxFolderSize": 50,
+                      "createdAt": "2026-01-05T10:45:57.113Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Forbidden resource",
+                  "error": "Forbidden",
+                  "statusCode": 403
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all users",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/user/{id}": {
+      "get": {
+        "operationId": "UserController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get one user",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
+                  "email": "user2@gmail.com",
+                  "subscription": "free",
+                  "maxFolderSize": 50,
+                  "createdAt": "2026-01-05T10:46:01.740Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Forbidden resource",
+                  "error": "Forbidden",
+                  "statusCode": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "User not found",
+                  "error": "Not Found",
+                  "statusCode": 404
+                }
+              }
+            }
+          }
+        },
+        "summary": "Find one user",
+        "tags": [
+          "User"
+        ]
+      },
+      "patch": {
+        "operationId": "UserController_updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
+                  "email": "user2@gmail.com",
+                  "subscription": "free",
+                  "maxFolderSize": 50,
+                  "createdAt": "2026-01-05T10:46:01.740Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Forbidden resource",
+                  "error": "Forbidden",
+                  "statusCode": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "User not found",
+                  "error": "Not Found",
+                  "statusCode": 404
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update one user",
+        "tags": [
+          "User"
+        ]
+      },
+      "delete": {
+        "operationId": "UserController_deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted user successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "message": "The user 879cdf73-993e-40bc-809e-ad8e20cb0bf0 was deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Unauthorized",
+                  "statusCode": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Forbidden resource",
+                  "error": "Forbidden",
+                  "statusCode": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "User not found",
+                  "error": "Not Found",
+                  "statusCode": 404
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete user",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/referrals": {
+      "post": {
+        "operationId": "ReferralsController_createReferral",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "unique ID of the referral link and ID of the invited user",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReferralDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The entry was created successfully.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not found Error",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "USER_WITH_ID_NOT_FOUND": {
+                    "summary": "User with this id was not found",
+                    "value": {
+                      "message": "User with this id was not found",
+                      "error": "Not Found",
+                      "statusCode": 400
+                    }
+                  },
+                  "NO_USER_WITH_THIS_LINK": {
+                    "summary": "No user with this referral link was found.",
+                    "value": {
+                      "message": "No user with this referral link was found.",
+                      "error": "Not Found",
+                      "statusCode": 400
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Creating a record that a user registered using a friend's referral link",
+        "tags": [
+          "referrals"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Fl studio API",
+    "description": "Documentation for Fl studio API",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "access_token": {
+        "scheme": "Bearer",
+        "bearerFormat": "Bearer",
+        "description": "Please enter token in following format: Bearer <JWT>",
+        "name": "Authorization",
+        "type": "http",
+        "in": "Header"
+      },
+      "refresh_token": {
+        "scheme": "Bearer",
+        "bearerFormat": "Bearer",
+        "description": "Refresh token: Bearer <JWT>",
+        "name": "Authorization",
+        "type": "http",
+        "in": "Header"
+      }
+    },
+    "schemas": {
+      "AuthDto": {
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "User email",
+            "example": "test@gmail.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "User password",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "login",
+          "password"
+        ]
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "string",
+            "description": "Product priceId",
+            "example": "price_3R7DIGJfg0ar1hBiEIWUmKUE"
+          }
+        },
+        "required": [
+          "price"
+        ]
+      },
+      "CreatePostDto": {
+        "type": "object",
+        "properties": {
+          "contentHtml": {
+            "type": "string",
+            "example": "\n            <div>\n                <h2>Title</h2>\n                <p>Text</p>\n                <img src=\"image_link\" alt=\"image description\"/>\n            </div>\n        "
+          }
+        },
+        "required": [
+          "contentHtml"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@gmail.com"
+          },
+          "subscription": {
+            "type": "string",
+            "example": "free"
+          },
+          "maxFolderSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "email",
+          "subscription",
+          "maxFolderSize"
+        ]
+      },
+      "CreateReferralDto": {
+        "type": "object",
+        "properties": {
+          "referral": {
+            "type": "string",
+            "description": "Referral link",
+            "example": "6229bea9-29e5-4532-8241-bd193b1ee2bf"
+          },
+          "refereeId": {
+            "type": "string",
+            "description": "User ID",
+            "example": "a2ab20fc-b7de-4d91-9c59-c7d8a79ad811"
+          }
+        },
+        "required": [
+          "referral",
+          "refereeId"
+        ]
+      }
+    }
+  }
+}
