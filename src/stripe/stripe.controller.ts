@@ -180,7 +180,6 @@ export class StripeController {
 	@Get('customer')
 	async customerInfo(@Req() req) {
 		const customerId = req.user.stripeCustomerId;
-		console.log(req.headers.authorization);
 		const token = req.headers.authorization.split(' ').pop();
 
 		const decoded = await this.jwtService.decode(token);

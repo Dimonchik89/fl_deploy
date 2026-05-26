@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: fl_studio_data
       PGDATA: /var/lib/postgresql/data/fl_studio
     ports:
-      - "5430:5432"
+      - '5430:5432'
     # volumes:
     #   - ./pgdata:/var/lib/postgresql/data/fl_studio
     deploy:
@@ -22,7 +22,7 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d postgres_db" ]
+      test: ['CMD-SHELL', 'pg_isready -U admin -d fl_studio_data']
       interval: 30s
       timeout: 10s
       retries: 5

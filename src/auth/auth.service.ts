@@ -30,9 +30,12 @@ import { join } from 'path';
 import { StripeService } from '../stripe/stripe.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Referrals } from '../entities/referrals.entity';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+	private readonly logger = new Logger(AuthService.name);
+
 	constructor(
 		@Inject('USER_REPOSITORY') private userRepository: typeof User,
 		@Inject(refreshJwtConfig.KEY)
@@ -47,7 +50,7 @@ export class AuthService {
 	async updateHashedRefreshToken(userId: string, refreshToken: string) {
 		const hashedRefreshToken = await argon2.hash(refreshToken);
 
-		console.log('updateHashedRefreshToken', userId, refreshToken);
+		this.logger.log(`Updated hashed refresh token for user ${userId}`);
 
 		return await this.userRepository.update(
 			{ hashedRefreshToken },

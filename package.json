@@ -17,7 +17,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "db:migrate:prod": "NODE_ENV=production npx sequelize-cli db:migrate"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.4",
@@ -38,8 +41,12 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.4.2",
     "fs-extra": "^11.3.0",
     "handlebars": "^4.7.9",
+    "helmet": "^8.2.0",
+    "joi": "^18.2.1",
+    "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
@@ -49,10 +56,12 @@
     "rxjs": "^7.8.1",
     "sanitize-html": "^2.17.0",
     "sequelize": "^6.37.5",
+    "sequelize-cli": "^6.6.5",
     "sequelize-typescript": "^2.1.6",
     "stripe": "^17.7.0",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -60,6 +69,7 @@
     "@nestjs/testing": "^11.0.11",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
+    "@types/joi": "^17.2.2",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.3.1",
     "@types/passport-google-oauth20": "^2.0.16",

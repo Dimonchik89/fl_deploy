@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 	UnauthorizedException,
 	forwardRef,
+	Logger,
 } from '@nestjs/common';
 import Stripe from 'stripe';
 import { User } from '../entities/user.entity';
@@ -15,6 +16,7 @@ import { templateMail } from '../templates/template';
 @Injectable()
 export class StripeWebhookService {
 	private stripe: Stripe;
+	private readonly logger = new Logger(StripeWebhookService.name);
 
 	constructor(
 		@Inject('USER_REPOSITORY') private userRepository: typeof User,
@@ -81,7 +83,7 @@ export class StripeWebhookService {
 					{ where: { id: usedIds } },
 				);
 
-				console.log(`Бонус начислен пользователю ${referrerId}`);
+				this.logger.log(`Бонус начислен пользователю ${referrerId}`);
 
 				// await this.mailerService.sendMail({
 				//     to: referrerUser.email,
@@ -101,7 +103,7 @@ export class StripeWebhookService {
 				// проверяем еще раз, пока не закончатся тройки
 				await this.checkAndApplyReferralBonus(referrerId);
 			} catch (error) {
-				console.error('Ошибка при начислении кредита в Stripe:', error);
+				this.logger.error('Ошибка при начислении кредита в Stripe:', error);
 			}
 		}
 	}
@@ -119,7 +121,7 @@ export class StripeWebhookService {
 		// console.log("user!!!!!!!!!!!!!!!1", user);
 
 		if (!user && event.type !== 'checkout.session.completed') {
-			console.error(`User not found for customer: ${object.customer}`);
+			this.logger.error(`User not found for customer: ${object.customer}`);
 			return { received: false };
 		}
 
@@ -150,7 +152,7 @@ export class StripeWebhookService {
 			// }
 
 			case 'checkout.session.completed': {
-				console.log(`Checkout session completed`);
+				this.logger.log(`Checkout session completed`);
 				const session = object as Stripe.Checkout.Session;
 				// Чтобы получить данные о продукте, нужно развернуть подписку
 				// const subscription = await this.stripe.subscriptions.retrieve(
@@ -189,11 +191,11 @@ export class StripeWebhookService {
 			}
 
 			case 'customer.subscription.created': {
-				console.log(`Subscription created`);
+				this.logger.log(`Subscription created`);
 				const subscription = object as Stripe.Subscription;
 				const product = subscription.items.data[0].price
 					.product as StripeProduct;
-				console.log('created product!!!!!!!!!!!!!!!', product);
+				this.logger.log(`created product!!!!!!!!!!!!!!! ${product}`);
 
 				//  if(user) {
 				//     if (user.subscriptionId && user.subscriptionId !== subscription.id) {
@@ -243,14 +245,14 @@ export class StripeWebhookService {
 					await this.checkAndApplyReferralBonus(referralEntry.referrerId);
 				}
 				// -----------------------
-				console.log('Invoice paid');
+				this.logger.log('Invoice paid');
 				break;
 			}
 
 			// Событие срабатывает, если Stripe не смог провести платеж (например, у карты истёк срок, или недостаточно средств).
 			// Мы переводим пользователя на бесплатный тариф, чтобы ограничить его возможности.
 			case 'invoice.payment_failed': {
-				console.log('Invoice payment failed');
+				this.logger.log('Invoice payment failed');
 				if (user) {
 					user.subscription = SubscriptionEnum.free;
 					user.maxFolderSize = this.returnNewFolderSize(SubscriptionEnum.free);
@@ -262,7 +264,7 @@ export class StripeWebhookService {
 			// Событие срабатывает при любых изменениях в подписке (например, смене тарифа).
 			// Здесь мы обновляем тариф и лимит памяти в зависимости от нового статуса подписки.
 			case 'customer.subscription.updated': {
-				console.log('Subscription updated');
+				this.logger.log('Subscription updated');
 
 				const subscriptionTail = object as Stripe.Subscription;
 
@@ -271,18 +273,8 @@ export class StripeWebhookService {
 					{ expand: ['items.data.price.product'] },
 				);
 
-				console.log(
-					'subscription.current_period_start',
-					subscription.current_period_start,
-				);
-
-				console.log(
-					'subscription.current_period_end',
-					subscription.current_period_end,
-				);
-
 				if (!user) {
-					console.log('[Stripe Webhook] User not found');
+					this.logger.warn('[Stripe Webhook] User not found');
 					break;
 				}
 
@@ -298,11 +290,11 @@ export class StripeWebhookService {
 						user.subscriptionId === subscription.id &&
 						user.subscription === product.name
 					) {
-						console.log('[Stripe Webhook] Subscription already up to date');
+						this.logger.log('[Stripe Webhook] Subscription already up to date');
 						break;
 					}
 
-					console.log(
+					this.logger.log(
 						`[Stripe Webhook] Updating ${user.email} to ${product.name}`,
 					);
 					user.subscription = product.name as SubscriptionEnum;
@@ -318,7 +310,7 @@ export class StripeWebhookService {
 			// Событие срабатывает, когда подписка полностью удалена (например, после отмены в конце периода).
 			// Мы обнуляем данные о подписке и переводим пользователя на бесплатный тариф.
 			case 'customer.subscription.deleted': {
-				console.log('Subscription deleted!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+				this.logger.log('Subscription deleted');
 				const subscription = object as Stripe.Subscription;
 
 				const user = await this.userRepository.findOne({
@@ -326,7 +318,7 @@ export class StripeWebhookService {
 				});
 
 				if (!user) {
-					console.error(
+					this.logger.error(
 						`User with customerId ${subscription.customer} not found`,
 					);
 					break;
@@ -343,13 +335,13 @@ export class StripeWebhookService {
 				user.maxFolderSize = this.returnNewFolderSize(SubscriptionEnum.free);
 				user.subscriptionId = null;
 				await user.save();
-				console.log(`User ${user.email} downgraded to free`);
+				this.logger.log(`User ${user.email} downgraded to free`);
 
 				break;
 			}
 
 			default:
-				console.log(`Unhandled event type ${event.type}.`);
+				this.logger.log(`Unhandled event type ${event.type}.`);
 		}
 
 		return { received: true };

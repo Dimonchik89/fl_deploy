@@ -5,22 +5,36 @@ import { json } from 'express';
 import * as bodyParser from 'body-parser';
 import { promises as fsPromises } from 'fs';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
+import { ConfigService } from '@nestjs/config';
+import { WinstonModule } from 'nest-winston';
+import { winstonConfig } from './logger/winston.config';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { HttpAdapterHost } from '@nestjs/core';
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule, { rawBody: true });
+	const app = await NestFactory.create(AppModule, {
+		rawBody: true,
+		logger: WinstonModule.createLogger(winstonConfig),
+	});
+
+	const httpAdapterHost = app.get(HttpAdapterHost);
+	app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
+
 	// app.enableCors({
 	// 	origin: process.env.BASE_CLIENT_URL,
 	// });
 
 	app.enableCors();
 	app.setGlobalPrefix('api');
+	app.use(helmet());
 	// проверка соотвецтвие входящих с клиента данных во всем проекте
-	// app.useGlobalPipes(
-	// 	new ValidationPipe({
-	// 		whitelist: true,
-	// 		forbidNonWhitelisted: true,
-	// 	}),
-	// );
+	app.useGlobalPipes(
+		new ValidationPipe({
+			whitelist: true,
+			forbidNonWhitelisted: true,
+		}),
+	);
 
 	const options = new DocumentBuilder()
 		.setTitle('Fl studio API')
@@ -52,17 +66,22 @@ async function bootstrap() {
 
 	const document = SwaggerModule.createDocument(app, options);
 
-	await fsPromises.writeFile(
-		'./swagger-spec.json',
-		JSON.stringify(document, null, 2),
-	);
+	// await fsPromises.writeFile(
+	// 	'./swagger-spec.json',
+	// 	JSON.stringify(document, null, 2),
+	// );
 
 	SwaggerModule.setup('api/swagger', app, document);
 
-	await app.listen(process.env.PORT ?? 3001);
+	const configService = app.get(ConfigService);
+	await app.listen(configService.get('PORT'));
 }
 bootstrap();
 
 // stripe login - если ошибка перелогинится
 
 // stripe listen --forward-to localhost:3001/api/stripe/webhook
+
+// * npm run db:migrate — запуск миграций локально.
+// * npm run db:migrate:undo — откат последней миграции.
+// * npm run db:migrate:prod — запуск миграций в продакшене (использует SSL и настройки из .env).

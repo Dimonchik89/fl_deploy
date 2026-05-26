@@ -19,7 +19,11 @@ export class PostsService {
 		// const createdFiles: string[] = [];
 		const createdFiles: Array<PostImage> = [];
 
-		const uploadFolder = join(path, process.env.UPLOADS_BASE_PATH, 'posts');
+		const uploadFolder = join(
+			path,
+			process.env.UPLOADS_BASE_PATH || 'uploads',
+			'posts',
+		);
 		await fsExtra.ensureDir(uploadFolder);
 
 		for (const file of files) {
@@ -152,10 +156,14 @@ export class PostsService {
 
 	async deletePostImageArray(arrayPath: PostImage[]) {
 		try {
-			arrayPath.forEach(async ({ src }) => {
-				const path = join(__dirname, '..', '..', 'uploads', src);
-				await fsExtra.remove(path);
-			});
+			for (const { src } of arrayPath) {
+				const fullPath = join(
+					path,
+					process.env.UPLOADS_BASE_PATH || 'uploads',
+					src,
+				);
+				await fsExtra.remove(fullPath);
+			}
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}

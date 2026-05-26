@@ -42,7 +42,6 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 import clientConfig from './config/client.config';
 import { ConfigType } from '@nestjs/config';
-import { join } from 'path';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -125,7 +124,6 @@ export class AuthController {
 	@Post('login')
 	async login(@Body() dto: AuthDto) {
 		const user = await this.authService.validateUser(dto);
-		// console.log(join(__dirname, '..', '..', 'uploads'));
 
 		return await this.authService.login(user);
 	}
