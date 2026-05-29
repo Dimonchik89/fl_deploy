@@ -9,17 +9,12 @@ import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './logger/winston.config';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import { HttpAdapterHost } from '@nestjs/core';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, {
 		rawBody: true,
 		logger: WinstonModule.createLogger(winstonConfig),
 	});
-
-	const httpAdapterHost = app.get(HttpAdapterHost);
-	app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
 
 	// app.enableCors({
 	// 	origin: process.env.BASE_CLIENT_URL,

@@ -14,6 +14,7 @@ import { Role } from '../auth/enums/role.enum';
 import { DataTypes } from 'sequelize';
 import { SubscriptionEnum } from 'src/stripe/stripe.types';
 import { Referrals } from './referrals.entity';
+import { Device } from './device.entity';
 
 @Table
 export class User extends Model {
@@ -72,4 +73,7 @@ export class User extends Model {
 
 	@HasMany(() => Referrals, 'refereeId')
 	referralReceived: Referrals;
+
+	@HasMany(() => Device)
+	devices: Device[];
 }

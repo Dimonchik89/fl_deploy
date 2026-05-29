@@ -13,6 +13,8 @@ import { AuthService } from 'src/auth/auth.service';
 import { Referrals } from '../entities/referrals.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { templateMail } from '../templates/template';
+import { Sequelize } from 'sequelize-typescript';
+
 @Injectable()
 export class StripeWebhookService {
 	private stripe: Stripe;
@@ -20,12 +22,12 @@ export class StripeWebhookService {
 
 	constructor(
 		@Inject('USER_REPOSITORY') private userRepository: typeof User,
-		// private readonly authService: AuthService
 		@Inject('REFERRALS_REPOSITORY')
 		private referralsRepository: typeof Referrals,
 		@Inject(forwardRef(() => AuthService))
 		private readonly authService: AuthService,
 		private mailerService: MailerService,
+		@Inject('SEQUELIZE') private readonly sequelize: Sequelize,
 	) {
 		this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 			apiVersion: '2025-02-24.acacia',
@@ -44,67 +46,83 @@ export class StripeWebhookService {
 	}
 
 	async checkAndApplyReferralBonus(referrerId: string) {
-		// Ищем всех друзей, которые оплатили (converted), но еще НЕ были использованы для бонуса (bonusApplied: false)
-		const activeReferrals = await this.referralsRepository.findAll({
-			where: {
-				referrerId,
-				status: 'converted',
-				bonusApplied: false,
-			},
-			limit: 3,
-		});
-
-		if (activeReferrals.length >= 3) {
-			const referrerUser = await this.userRepository.findOne({
-				where: { id: referrerId },
+		const transaction = await this.sequelize.transaction();
+		try {
+			// Ищем всех друзей, которые оплатили (converted), но еще НЕ были использованы для бонуса (bonusApplied: false)
+			// Добавляем order и lock для обеспечения атомарности и предотвращения race conditions
+			const activeReferrals = await this.referralsRepository.findAll({
+				where: {
+					referrerId,
+					status: 'converted',
+					bonusApplied: false,
+				},
+				limit: 3,
+				order: [['id', 'ASC']],
+				lock: transaction.LOCK.UPDATE,
+				transaction,
 			});
 
-			if (!referrerUser || !referrerUser.stripeCustomerId) {
+			if (activeReferrals.length < 3) {
+				await transaction.commit();
 				return;
 			}
 
-			try {
-				// Начисляем кредит в Stripe (Customer Balance)
-				// Допустим, твоя подписка стоит 500 центов ($5.00)
-				const AMOUNT_TO_CREDIT = 500;
+			const referrerUser = await this.userRepository.findOne({
+				where: { id: referrerId },
+				transaction,
+			});
 
-				await this.stripe.customers.createBalanceTransaction(
-					referrerUser.stripeCustomerId,
-					{
-						amount: -AMOUNT_TO_CREDIT, // минус означает кредит (баланс пользователя), плюс - долг
-						currency: 'usd',
-						description: 'Bonus for inviting 3 friends',
-					},
-				);
-
-				const usedIds = activeReferrals.map((user) => user.id);
-				await this.referralsRepository.update(
-					{ bonusApplied: true },
-					{ where: { id: usedIds } },
-				);
-
-				this.logger.log(`Бонус начислен пользователю ${referrerId}`);
-
-				// await this.mailerService.sendMail({
-				//     to: referrerUser.email,
-				//     subject: "You just earned $5.00! Thanks to your friends",
-				//     template: './referral-bonus',
-				//     context: {
-				//         name: referrerUser.email || "there"
-				//     }
-				// })
-				await this.mailerService.sendMail({
-					to: referrerUser.email,
-					subject: 'You just earned $5.00! Thanks to your friends',
-					html: templateMail(referrerUser.email),
-				});
-
-				// Если у юзера было, например, сразу 6 или 9 друзей,
-				// проверяем еще раз, пока не закончатся тройки
-				await this.checkAndApplyReferralBonus(referrerId);
-			} catch (error) {
-				this.logger.error('Ошибка при начислении кредита в Stripe:', error);
+			if (!referrerUser || !referrerUser.stripeCustomerId) {
+				await transaction.commit();
+				return;
 			}
+
+			// Начисляем кредит в Stripe (Customer Balance)
+			// Допустим, твоя подписка стоит 500 центов ($5.00)
+			const AMOUNT_TO_CREDIT = 500;
+			const usedIds = activeReferrals.map((ref) => ref.id);
+
+			// Создаем ключ идемпотентности на основе ID рефералов, чтобы избежать дублей в Stripe
+			const idempotencyKey = `referral-bonus-${referrerId}-${usedIds.sort().join('-')}`;
+
+			// Сначала обновляем статус в нашей базе (в рамках транзакции)
+			await this.referralsRepository.update(
+				{ bonusApplied: true },
+				{
+					where: { id: usedIds },
+					transaction,
+				},
+			);
+
+			// Вызываем Stripe API с ключом идемпотентности
+			await this.stripe.customers.createBalanceTransaction(
+				referrerUser.stripeCustomerId,
+				{
+					amount: -AMOUNT_TO_CREDIT, // минус означает кредит (баланс пользователя), плюс - долг
+					currency: 'usd',
+					description: 'Bonus for inviting 3 friends',
+				},
+				{
+					idempotencyKey,
+				},
+			);
+
+			// Фиксируем изменения в базе
+			await transaction.commit();
+			this.logger.log(`Бонус начислен пользователю ${referrerId}`);
+
+			await this.mailerService.sendMail({
+				to: referrerUser.email,
+				subject: 'You just earned $5.00! Thanks to your friends',
+				html: templateMail(referrerUser.email),
+			});
+
+			// Если у юзера было, например, сразу 6 или 9 друзей,
+			// проверяем еще раз ПОСЛЕ завершения текущей транзакции
+			await this.checkAndApplyReferralBonus(referrerId);
+		} catch (error) {
+			if (transaction) await transaction.rollback();
+			this.logger.error('Ошибка при начислении кредита в Stripe:', error);
 		}
 	}
 

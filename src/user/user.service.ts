@@ -10,6 +10,7 @@ export class UserService {
 	async findById(id: string) {
 		return await this.userRepository.findOne({
 			where: { id },
+			include: ['devices'],
 			attributes: ['id', 'email', 'subscription', 'maxFolderSize', 'createdAt'],
 		});
 	}

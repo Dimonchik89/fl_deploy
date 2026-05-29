@@ -7,11 +7,13 @@ import jwtConfig from '../auth/config/jwt.config';
 import { StripeWebhookService } from './stripe-webhook.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { referralsProviders } from '../referrals/referrals.providers';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Module({
 	imports: [
 		forwardRef(() => AuthModule),
 		JwtModule.registerAsync(jwtConfig.asProvider()),
+		DatabaseModule,
 	],
 	controllers: [StripeController],
 	providers: [

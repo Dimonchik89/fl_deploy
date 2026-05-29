@@ -155,17 +155,17 @@ export class PostsService {
 	}
 
 	async deletePostImageArray(arrayPath: PostImage[]) {
-		try {
-			for (const { src } of arrayPath) {
-				const fullPath = join(
-					path,
-					process.env.UPLOADS_BASE_PATH || 'uploads',
-					src,
-				);
+		for (const { src } of arrayPath) {
+			const fullPath = join(
+				path,
+				process.env.UPLOADS_BASE_PATH || 'uploads',
+				src,
+			);
+			try {
 				await fsExtra.remove(fullPath);
+			} catch (error) {
+				throw new BadRequestException(error.message);
 			}
-		} catch (error) {
-			throw new BadRequestException(error.message);
 		}
 	}
 }

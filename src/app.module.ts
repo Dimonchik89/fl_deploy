@@ -14,6 +14,7 @@ import { ReferralsModule } from './referrals/referrals.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { envValidationSchema } from './config/env.validation';
+import { DeviceModule } from './device/device.module';
 
 @Module({
 	imports: [
@@ -69,6 +70,7 @@ import { envValidationSchema } from './config/env.validation';
 		PostsModule,
 		UserModule,
 		ReferralsModule,
+		DeviceModule,
 	],
 })
 export class AppModule {}

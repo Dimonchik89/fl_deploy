@@ -85,8 +85,8 @@ export class UserController {
 		description: 'Not Found',
 		example: USER_NOT_FOUND_EXAMPLE,
 	})
-	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
+	// @Roles(Role.ADMIN)
+	// @UseGuards(RolesGuard)
 	@UseGuards(JwtAuthGuard)
 	@Get(':id')
 	getOne(@Param('id') id: string) {

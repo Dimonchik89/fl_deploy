@@ -3,6 +3,7 @@ import { User } from '../entities/user.entity';
 import { Post } from '../entities/post.entity';
 import { Referrals } from '../entities/referrals.entity';
 import { ConfigService } from '@nestjs/config';
+import { Device } from '../entities/device.entity';
 
 export const databaseProviders = [
 	{
@@ -39,7 +40,7 @@ export const databaseProviders = [
 				},
 				logging: false,
 			});
-			sequelize.addModels([User, Post, Referrals]);
+			sequelize.addModels([User, Post, Referrals, Device]);
 			await sequelize.authenticate();
 			return sequelize;
 		},

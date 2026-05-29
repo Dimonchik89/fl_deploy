@@ -23,14 +23,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
 				? exception.getStatus()
 				: HttpStatus.INTERNAL_SERVER_ERROR;
 
+		const exceptionResponse =
+			exception instanceof HttpException ? exception.getResponse() : null;
+
+		const isProduction = process.env.NODE_ENV === 'production';
+
 		const responseBody = {
 			statusCode: httpStatus,
 			timestamp: new Date().toISOString(),
 			path: httpAdapter.getRequestUrl(ctx.getRequest()),
-			message:
-				exception instanceof HttpException
-					? exception.getResponse()
-					: 'Internal server error',
+			...(typeof exceptionResponse === 'object'
+				? (exceptionResponse as object)
+				: {
+						message:
+							exceptionResponse ||
+							(isProduction
+								? 'Internal server error'
+								: (exception as any)?.message || 'Internal server error'),
+					}),
 		};
 
 		// Логируем ошибку
@@ -41,7 +51,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 			);
 		} else {
 			this.logger.warn(
-				`HTTP ${httpStatus} at ${responseBody.path}: ${JSON.stringify(responseBody.message)}`,
+				`HTTP ${httpStatus} at ${responseBody.path}: ${JSON.stringify(
+					exceptionResponse || (exception as any)?.message,
+				)}`,
 			);
 		}
 
