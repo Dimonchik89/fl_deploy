@@ -24,12 +24,12 @@ async function bootstrap() {
 	app.setGlobalPrefix('api');
 	app.use(helmet());
 	// проверка соотвецтвие входящих с клиента данных во всем проекте
-	app.useGlobalPipes(
-		new ValidationPipe({
-			whitelist: true,
-			forbidNonWhitelisted: true,
-		}),
-	);
+	// app.useGlobalPipes(
+	// 	new ValidationPipe({
+	// 		whitelist: true,
+	// 		forbidNonWhitelisted: true,
+	// 	}),
+	// );
 
 	const options = new DocumentBuilder()
 		.setTitle('Fl studio API')

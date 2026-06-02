@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { Device } from '../entities/device.entity';
@@ -11,7 +16,20 @@ export class DeviceService {
 		@Inject('USER_REPOSITORY') private userRepository: typeof User,
 	) {}
 
-	async create({ userId, serialNumber }: CreateDeviceDto) {
+	async create(userId: string, { serialNumber }: CreateDeviceDto) {
+		const existingDevice = await this.deviceRepository.findOne({
+			where: { serialNumber },
+		});
+
+		if (existingDevice) {
+			if (existingDevice.userId === userId) {
+				return existingDevice;
+			}
+			throw new BadRequestException(
+				'This device is already registered to another account.',
+			);
+		}
+
 		const user = await this.userRepository.findOne({
 			where: {
 				id: userId,
@@ -29,37 +47,33 @@ export class DeviceService {
 			);
 		}
 
-		const deviceExists = await this.deviceRepository.findOne({
-			where: {
-				serialNumber,
-			},
-		});
-
-		if (!!deviceExists) {
-			throw new BadRequestException(
-				'This device is already registered to another account.',
-			);
-		}
-
 		const newDevice = await this.deviceRepository.create({
 			serialNumber,
 			userId,
 		});
+		return newDevice;
 	}
 
-	findAll() {
-		return `This action returns all device`;
+	async findAll() {
+		return await this.deviceRepository.findAndCountAll();
 	}
 
-	findOne(id: number) {
-		return `This action returns a #${id} device`;
-	}
+	async remove({ deviceId, userId }: { deviceId: string; userId: string }) {
+		const device = await this.deviceRepository.findOne({
+			where: {
+				id: deviceId,
+				userId,
+			},
+		});
 
-	update(id: number, updateDeviceDto: UpdateDeviceDto) {
-		return `This action updates a #${id} device`;
-	}
+		if (!device) {
+			throw new NotFoundException('Device not found');
+		}
 
-	remove(id: number) {
-		return `This action removes a #${id} device`;
+		await this.deviceRepository.destroy({ where: { id: deviceId } });
+		return {
+			statusCode: 200,
+			message: `The device ${deviceId} was deleted`,
+		};
 	}
 }
