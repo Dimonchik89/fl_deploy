@@ -14,6 +14,9 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import clientConfig from './config/client.config';
 import { StripeModule } from '../stripe/stripe.module';
 import { referralsProviders } from '../referrals/referrals.providers';
+import { DatabaseModule } from '../database/database.module';
+
+import { AuthCode } from '../entities/auth-code.entity';
 
 @Module({
 	controllers: [AuthController],
@@ -26,21 +29,17 @@ import { referralsProviders } from '../referrals/referrals.providers';
 		ConfigModule.forFeature(clientConfig),
 		PassportModule,
 		forwardRef(() => StripeModule),
+		DatabaseModule,
 	],
 	providers: [
 		AuthService,
 		JwtStrategy,
 		RefreshJwtStrategy,
 		GoogleStrategy,
-		// Если нужно добавить @UseGuard() во все ендпоинты и не добавлять в каждый вручну.
-		// {
-		// 	provide: APP_GUARD,
-		// 	useClass: JwtAuthGuard // @UseGuard(JwtAuthGuard) будет добавлено во все ендпоинты
-		// },
-		// {
-		// 	provide: APP_GUARD,
-		// 	useClass: RolesGuard
-		// },
+		{
+			provide: 'AUTH_CODE_REPOSITORY',
+			useValue: AuthCode,
+		},
 		...userProviders,
 		...referralsProviders,
 	],

@@ -42,6 +42,7 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 import clientConfig from './config/client.config';
 import { ConfigType } from '@nestjs/config';
+import { ExchangeCodeDto } from './dto/exchange-code.dto';
 
 @ApiTags('Auth')
 @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -197,48 +198,56 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Endpoint for registration and login using google account',
 	})
+	@ApiOperation({
+		summary: 'Google OAuth Login Entry Point',
+		description: 'Redirects the user to Google Login page. \n\n' +
+			'**Desktop App (Python) usage:** Append `?state=desktop` to the URL to ensure redirection back to `http://localhost:5000`. \n\n' +
+			'**Web App usage:** Default behavior, redirects back to the configured Client URL.'
+	})
 	@UseGuards(GoogleAuthGuard)
 	@Get('google/login')
 	googleLogin() {}
 
 	@ApiOperation({
-		summary:
-			'Endpoint to which redirection will occur after Google confirms the login. It will receive all the necessary data, create a user and redirect to the client page with the addition of searchParameters',
+		summary: 'Google OAuth Callback (Internal)',
+		description: 'Endpoint where Google redirects the user after authentication. \n\n' +
+			'1. Generates a short-lived (60s) temporary exchange code. \n' +
+			'2. Redirects the user back to the platform: \n' +
+			'   - **Desktop:** `http://localhost:5000/callback?code={tempCode}` (if state=desktop was used) \n' +
+			'   - **Web:** `{CLIENT_URL}/login?code={tempCode}` (default)'
 	})
 	@UseGuards(GoogleAuthGuard)
 	@Get('google/callback')
 	async googleCallback(@Req() req, @Res() res) {
-		const response = await this.authService.login(req.user);
+		const tempCode = await this.authService.generateAuthCode(req.user.id);
 
-		res.redirect(
-			`${this.clientConfiguration.clientURL}/login?access_token=${response.access_token}&refresh_token=${response.refresh_token}`,
-		);
+		// Проверяем, откуда пришел пользователь (через параметр state в OAuth)
+		const isDesktop = req.query.state === 'desktop';
+		const redirectUrl = isDesktop
+			? `http://localhost:5000/callback?code=${tempCode}`
+			: `${this.clientConfiguration.clientURL}/login?code=${tempCode}`;
+
+		res.redirect(redirectUrl);
 	}
 
-	// ---------------------- тестовый вариант, передача токена как защещенные cookie ({ passthrough: true } и httpOnly: true) к которому нет доступа из js но
-	// ------------------------------ он автоматически добавляеться к каждлму запросу. Если оставить этот пожход то изменить и другие ендпоинты (register, login, refresh), убрать у них отправку
-	// ------------------------------- токенов в теле запроса и добавить отправку токенов в cookie
-	// @UseGuards(GoogleAuthGuard)
-	// @Get('google/callback')
-	// async googleCallback(@Req() req, @Res({ passthrough: true }) res: Response) {
-	// 	const response = await this.authService.login(req.user);
-
-	// 	// Устанавливаем куки с токенами
-	// 	res.cookie('access_token', response.access_token, {
-	// 		httpOnly: true,
-	// 		secure: true,
-	// 		sameSite: 'lax',
-	// 		expires: new Date(Date.now() + 3600000), // Срок жизни access_token
-	// 	});
-
-	// 	res.cookie('refresh_token', response.refresh_token, {
-	// 		httpOnly: true,
-	// 		secure: true,
-	// 		sameSite: 'lax',
-	// 		expires: new Date(Date.now() + 7 * 24 * 3600000), // Срок жизни refresh_token
-	// 	});
-
-	// 	// Редирект без токенов в URL
-	// 	res.redirect(`${this.clientConfiguration.clientURL}/profile`);
-	// }
+	@ApiOperation({ 
+		summary: 'Exchange temporary code for JWT tokens',
+		description: 'After receiving a `code` via redirect (from Google OAuth), the client (Web or Desktop) must call this endpoint to receive the final Access and Refresh tokens. \n\n' +
+			'The code is one-time use and expires in 60 seconds.'
+	})
+	@ApiBody({ type: ExchangeCodeDto })
+	@ApiResponse({ 
+		status: 200, 
+		description: 'Tokens successfully generated', 
+		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE 
+	})
+	@ApiResponse({ 
+		status: 401, 
+		description: 'Invalid or expired temporary code' 
+	})
+	@Post('exchange-code')
+	@HttpCode(200)
+	async exchangeCode(@Body() { code }: ExchangeCodeDto) {
+		return this.authService.exchangeCode(code);
+	}
 }

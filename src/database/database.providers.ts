@@ -4,6 +4,7 @@ import { Post } from '../entities/post.entity';
 import { Referrals } from '../entities/referrals.entity';
 import { ConfigService } from '@nestjs/config';
 import { Device } from '../entities/device.entity';
+import { AuthCode } from '../entities/auth-code.entity';
 
 export const databaseProviders = [
 	{
@@ -40,7 +41,7 @@ export const databaseProviders = [
 				},
 				logging: false,
 			});
-			sequelize.addModels([User, Post, Referrals, Device]);
+			sequelize.addModels([User, Post, Referrals, Device, AuthCode]);
 			await sequelize.authenticate();
 			return sequelize;
 		},

@@ -32,6 +32,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Referrals } from '../entities/referrals.entity';
 import { Logger } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
+import { AuthCode } from '../entities/auth-code.entity';
+import { Op } from 'sequelize';
 
 import { Role } from './enums/role.enum';
 import { TokeInterface } from './auth.types';
@@ -42,6 +44,7 @@ export class AuthService {
 
 	constructor(
 		@Inject('USER_REPOSITORY') private userRepository: typeof User,
+		@Inject('AUTH_CODE_REPOSITORY') private authCodeRepository: typeof AuthCode,
 		@Inject(refreshJwtConfig.KEY)
 		private refreshTokenConfig: ConfigType<typeof refreshJwtConfig>,
 		private jwtService: JwtService,
@@ -278,5 +281,49 @@ export class AuthService {
 		});
 
 		return newUser;
+	}
+
+	async generateAuthCode(userId: string): Promise<string> {
+		const code = uuidv4();
+		const expiresAt = new Date(Date.now() + 60 * 1000); // Код живет 60 секунд
+
+		await this.authCodeRepository.create({
+			code,
+			userId,
+			expiresAt,
+		});
+
+		return code;
+	}
+
+	async exchangeCode(code: string): Promise<UserAccessTokenAndRefreshToken> {
+		const authCode = await this.authCodeRepository.findOne({
+			where: {
+				code,
+				expiresAt: {
+					[Op.gt]: new Date(),
+				},
+			},
+			include: [User],
+		});
+
+		if (!authCode) {
+			throw new UnauthorizedException('Invalid or expired temporary code');
+		}
+
+		const user = authCode.user;
+
+		// Удаляем код после использования (одноразовый)
+		await authCode.destroy();
+
+		const tailUser: TailUserForToken = {
+			id: user.id,
+			email: user.email,
+			subscription: user.subscription,
+			stripeCustomerId: user.stripeCustomerId,
+			role: user.role as Role,
+		};
+
+		return this.login(tailUser);
 	}
 }

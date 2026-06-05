@@ -265,6 +265,7 @@
     },
     "/api/auth/google/login": {
       "get": {
+        "description": "Redirects the user to Google Login page. \n\n**Desktop App (Python) usage:** Append `?state=desktop` to the URL to ensure redirection back to `http://localhost:5000`. \n\n**Web App usage:** Default behavior, redirects back to the configured Client URL.",
         "operationId": "AuthController_googleLogin",
         "parameters": [],
         "responses": {
@@ -283,6 +284,7 @@
     },
     "/api/auth/google/callback": {
       "get": {
+        "description": "Endpoint where Google redirects the user after authentication. \n\n1. Generates a short-lived (60s) temporary exchange code. \n2. Redirects the user back to the platform: \n   - **Desktop:** `http://localhost:5000/callback?code={tempCode}` (if state=desktop was used) \n   - **Web:** `{CLIENT_URL}/login?code={tempCode}` (default)",
         "operationId": "AuthController_googleCallback",
         "parameters": [],
         "responses": {
@@ -293,7 +295,47 @@
             "description": "Internal server error."
           }
         },
-        "summary": "Endpoint to which redirection will occur after Google confirms the login. It will receive all the necessary data, create a user and redirect to the client page with the addition of searchParameters",
+        "summary": "Google OAuth Callback (Internal)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/exchange-code": {
+      "post": {
+        "description": "After receiving a `code` via redirect (from Google OAuth), the client (Web or Desktop) must call this endpoint to receive the final Access and Refresh tokens. \n\nThe code is one-time use and expires in 60 seconds.",
+        "operationId": "AuthController_exchangeCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens successfully generated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNkZmI4ZjA4LWQ1Y2EtNDc3Yy05M2I2LTE4N2U3OTZiOTI5NSIsImVtYWlsIjoidG90b3RvQGdtYWlsLmNvbSIsInN1YnNjcmlwdGlvbiI6ImZyZWUiLCJzdHJpcGVDdXN0b21lcklkIjpudWxsLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NTU1ODg1OSwiZXhwIjoxNzQ2MTYzNjU5fQ.vBfGp9eFCBpfDqY3TkiDA8Vc4MF2OvI9bDk_456d91Q"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired temporary code"
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "summary": "Exchange temporary code for JWT tokens",
         "tags": [
           "Auth"
         ]
@@ -1473,6 +1515,19 @@
         "required": [
           "login",
           "password"
+        ]
+      },
+      "ExchangeCodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The temporary code received after OAuth redirect",
+            "example": "abc-123-def"
+          }
+        },
+        "required": [
+          "code"
         ]
       },
       "CheckoutDto": {
