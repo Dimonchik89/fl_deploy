@@ -31,6 +31,10 @@ import { StripeService } from '../stripe/stripe.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Referrals } from '../entities/referrals.entity';
 import { Logger } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
+
+import { Role } from './enums/role.enum';
+import { TokeInterface } from './auth.types';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +49,7 @@ export class AuthService {
 		private readonly stripeService: StripeService,
 		@Inject('REFERRALS_REPOSITORY')
 		private referralsRepository: typeof Referrals,
+		@Inject('SEQUELIZE') private readonly sequelize: Sequelize,
 	) {}
 
 	async updateHashedRefreshToken(userId: string, refreshToken: string) {
@@ -63,27 +68,39 @@ export class AuthService {
 	}
 
 	async createUser(dto: RegisterDto): Promise<TailUserForToken> {
-		const salt = await genSalt(10);
-		const customerId = await this.stripeService.createStripeCustomer(dto.login);
+		const transaction = await this.sequelize.transaction();
+		try {
+			const salt = await genSalt(10);
+			const customerId = await this.stripeService.createStripeCustomer(
+				dto.login,
+			);
 
-		const newUser = await this.userRepository.create({
-			email: dto.login,
-			passwordHash: await hash(dto.password, salt),
-			subscription: SubscriptionEnum.free,
-			maxFolderSize: 50,
-			role: dto.role,
-			stripeCustomerId: customerId,
-			referralCode: uuidv4(),
-		});
+			const newUser = await this.userRepository.create(
+				{
+					email: dto.login,
+					passwordHash: await hash(dto.password, salt),
+					subscription: SubscriptionEnum.free,
+					role: Role.USER,
+					stripeCustomerId: customerId,
+					referralCode: uuidv4(),
+				},
+				{ transaction },
+			);
 
-		const tailUser = {
-			id: newUser.id,
-			email: newUser.email,
-			subscription: newUser.subscription,
-			stripeCustomerId: newUser.stripeCustomerId,
-			role: newUser.role,
-		};
-		return tailUser;
+			await transaction.commit();
+
+			return {
+				id: newUser.id,
+				email: newUser.email,
+				subscription: newUser.subscription,
+				stripeCustomerId: newUser.stripeCustomerId,
+				role: newUser.role,
+			};
+		} catch (error) {
+			await transaction.rollback();
+			this.logger.error(`Failed to create user: ${error.message}`);
+			throw new InternalServerErrorException('Error during user registration');
+		}
 	}
 
 	async validateUser(dto: AuthDto): Promise<TailUserForToken> {
@@ -184,11 +201,17 @@ export class AuthService {
 	}
 
 	// -------------------------------- Посмотреть на необходимость наличия этой функции
-	async refreshToken(userId: string) {
-		const { id, email, subscription, stripeCustomerId, role } =
-			await this.userRepository.findOne({
-				where: { id: userId },
-			});
+	async refreshToken({
+		id,
+		email,
+		role,
+		stripeCustomerId,
+		subscription,
+	}: TokeInterface) {
+		// const { id, email, subscription, stripeCustomerId, role } =
+		// 	await this.userRepository.findOne({
+		// 		where: { id: userId },
+		// 	});
 
 		const { accessToken, refreshToken } = await this.generateTokens({
 			id,
@@ -209,7 +232,7 @@ export class AuthService {
 	async validateRefreshToken(
 		userId: string,
 		refreshToken: string,
-	): Promise<{ id: string; email: string }> {
+	): Promise<TokeInterface> {
 		const user = await this.userRepository.findOne({ where: { id: userId } });
 
 		if (!user || !user.hashedRefreshToken) {
@@ -228,6 +251,9 @@ export class AuthService {
 		return {
 			id: user.id,
 			email: user.email,
+			stripeCustomerId: user.stripeCustomerId,
+			subscription: user.subscription,
+			role: user.role,
 		};
 	}
 

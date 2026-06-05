@@ -34,16 +34,16 @@ export class StripeWebhookService {
 		});
 	}
 
-	private returnNewFolderSize(subscriptionName: string): number {
-		switch (subscriptionName?.toLowerCase()) {
-			case SubscriptionEnum.pro:
-				return 150;
-			case SubscriptionEnum.started:
-				return 100;
-			default:
-				return 50;
-		}
-	}
+	// private returnNewFolderSize(subscriptionName: string): number {
+	// 	switch (subscriptionName?.toLowerCase()) {
+	// 		case SubscriptionEnum.pro:
+	// 			return 150;
+	// 		case SubscriptionEnum.started:
+	// 			return 100;
+	// 		default:
+	// 			return 50;
+	// 	}
+	// }
 
 	async checkAndApplyReferralBonus(referrerId: string) {
 		const transaction = await this.sequelize.transaction();
@@ -135,8 +135,6 @@ export class StripeWebhookService {
 				where: { stripeCustomerId: object.customer },
 			});
 		}
-
-		// console.log("user!!!!!!!!!!!!!!!1", user);
 
 		if (!user && event.type !== 'checkout.session.completed') {
 			this.logger.error(`User not found for customer: ${object.customer}`);
@@ -273,7 +271,6 @@ export class StripeWebhookService {
 				this.logger.log('Invoice payment failed');
 				if (user) {
 					user.subscription = SubscriptionEnum.free;
-					user.maxFolderSize = this.returnNewFolderSize(SubscriptionEnum.free);
 					await user.save();
 				}
 				break;
@@ -316,7 +313,6 @@ export class StripeWebhookService {
 						`[Stripe Webhook] Updating ${user.email} to ${product.name}`,
 					);
 					user.subscription = product.name as SubscriptionEnum;
-					user.maxFolderSize = this.returnNewFolderSize(product.name);
 					user.subscriptionId = subscription.id;
 
 					await user.save();
@@ -350,7 +346,6 @@ export class StripeWebhookService {
 				}
 
 				user.subscription = SubscriptionEnum.free;
-				user.maxFolderSize = this.returnNewFolderSize(SubscriptionEnum.free);
 				user.subscriptionId = null;
 				await user.save();
 				this.logger.log(`User ${user.email} downgraded to free`);

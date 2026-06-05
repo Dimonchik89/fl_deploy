@@ -32,10 +32,6 @@ module.exports = {
         allowNull: false,
         defaultValue: 'free',
       },
-      maxFolderSize: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
       stripeCustomerId: {
         type: Sequelize.STRING,
         allowNull: true,

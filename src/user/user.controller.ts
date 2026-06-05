@@ -16,7 +16,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+	ApiBearerAuth,
+	ApiOperation,
+	ApiParam,
+	ApiQuery,
+	ApiResponse,
+	ApiTags,
+} from '@nestjs/swagger';
 import { FORBIDDEN_EXAMPLE } from '../app.constants';
 import {
 	GET_ONE_USER_EXAMPLE,
@@ -26,6 +33,9 @@ import {
 import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+@ApiTags('Users')
+@ApiBearerAuth()
+@ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('user')
 export class UserController {
 	constructor(private readonly userService: UserService) {}

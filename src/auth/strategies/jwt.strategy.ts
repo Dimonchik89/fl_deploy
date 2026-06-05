@@ -33,6 +33,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 	}
 
 	async validate(payload: TailUserForToken) {
-		return { id: payload.id, email: payload.email, role: payload.role };
+		return {
+			id: payload.id,
+			email: payload.email,
+			role: payload.role,
+			stripeCustomerId: payload.stripeCustomerId,
+		};
 	}
 }

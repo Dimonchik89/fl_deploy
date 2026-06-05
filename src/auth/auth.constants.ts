@@ -71,6 +71,6 @@ export const USER_PROFILE_EXAMPLE = {
 	email: 'test@gmail.com',
 	subscription: 'free',
 	stripeCustomerId: null,
-	maxFolderSize: 104857600,
+	// maxFolderSize: 104857600,
 	currentTotalFolderSize: 54857600,
 };

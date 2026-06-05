@@ -11,7 +11,7 @@ export class UserService {
 		return await this.userRepository.findOne({
 			where: { id },
 			include: ['devices'],
-			attributes: ['id', 'email', 'subscription', 'maxFolderSize', 'createdAt'],
+			attributes: ['id', 'email', 'subscription', 'createdAt'],
 		});
 	}
 
@@ -21,7 +21,7 @@ export class UserService {
 		const offset = (Number(currentPage) - 1) * Number(collectionLimit);
 
 		return await this.userRepository.findAndCountAll({
-			attributes: ['id', 'email', 'subscription', 'maxFolderSize', 'createdAt'],
+			attributes: ['id', 'email', 'subscription', 'createdAt'],
 			order: [['createdAt', 'DESC']],
 			limit: collectionLimit,
 			offset,

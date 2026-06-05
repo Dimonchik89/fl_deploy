@@ -20,6 +20,7 @@ import {
 	ApiBody,
 	ApiOperation,
 	ApiResponse,
+	ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import {
@@ -41,7 +42,14 @@ import {
 import { Request } from 'express';
 import Stripe from 'stripe';
 import { JwtService } from '@nestjs/jwt';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { AdminApplyBonusDto } from './dto/admin-apply-bonus.dto';
 
+@ApiTags('Stripe')
+@ApiBearerAuth()
+@ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('stripe')
 export class StripeController {
 	constructor(
@@ -50,7 +58,6 @@ export class StripeController {
 	) {}
 
 	@ApiOperation({ summary: 'Get all products' })
-	@ApiBearerAuth('access_token')
 	@ApiResponse({
 		status: 200,
 		description: 'Token is valid, return products',
@@ -91,14 +98,8 @@ export class StripeController {
 		description: 'No such price',
 		example: NO_SUCH_PRICE_EXAMPLE,
 	})
-	@ApiResponse({
-		status: 500,
-		description: 'Request body not added',
-		example: INTERVAL_SERVER_ERROR,
-	})
 	@HttpCode(200)
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth('access_token')
 	@Post('checkout')
 	async checkout(@Body() dto: CheckoutDto, @Req() req) {
 		return await this.stripeService.checkout(dto.price, req.user.id);
@@ -118,13 +119,7 @@ export class StripeController {
 		description: 'No such checkout.session',
 		example: NO_SUCH_CHECKOUT_SESSION_EXAMPLE,
 	})
-	@ApiResponse({
-		status: 500,
-		description: 'Internal server error',
-		example: INTERVAL_SERVER_ERROR,
-	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth('access_token')
 	@Get('success')
 	async success(@Query() query: SessionIdQueryParam, @Req() req) {
 		return this.stripeService.success(query.session_id, req.user.id);
@@ -176,7 +171,6 @@ export class StripeController {
 		example: NO_SUCH_FILE_OR_DIRECTORY,
 	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth('access_token')
 	@Get('customer')
 	async customerInfo(@Req() req) {
 		const customerId = req.user.stripeCustomerId;
@@ -192,6 +186,17 @@ export class StripeController {
 			decoded.stripeCustomerId,
 			req.user.id,
 		);
+	}
+
+	@ApiOperation({ summary: 'Admin: Apply manual bonus to user balance' })
+	@ApiBody({ type: AdminApplyBonusDto })
+	@ApiResponse({ status: 200, description: 'Bonus applied successfully' })
+	@ApiResponse({ status: 403, description: 'Forbidden: Admin only' })
+	@Post('admin/apply-bonus')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.ADMIN)
+	async adminApplyBonus(@Body() dto: AdminApplyBonusDto) {
+		return this.stripeService.adminApplyBonus(dto.userId, dto.amount);
 	}
 
 	@Post('webhook')

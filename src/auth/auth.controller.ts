@@ -43,7 +43,8 @@ import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 import clientConfig from './config/client.config';
 import { ConfigType } from '@nestjs/config';
 
-@ApiTags('auth')
+@ApiTags('Auth')
+@ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('auth')
 export class AuthController {
 	constructor(
@@ -144,7 +145,7 @@ export class AuthController {
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth('access_token')
+	@ApiBearerAuth()
 	@Get('profile')
 	getProfile(@Req() req) {
 		return this.authService.getProfile(req.user.id);
@@ -168,7 +169,7 @@ export class AuthController {
 	@ApiBearerAuth('refresh_token')
 	@Post('refresh')
 	refresh(@Req() req) {
-		return this.authService.refreshToken(req.user.id);
+		return this.authService.refreshToken(req.user);
 	}
 
 	@ApiOperation({
@@ -185,7 +186,7 @@ export class AuthController {
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth('access_token')
+	@ApiBearerAuth()
 	@HttpCode(200)
 	@Post('signout')
 	signOut(@Req() req) {

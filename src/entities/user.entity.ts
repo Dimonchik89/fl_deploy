@@ -48,9 +48,6 @@ export class User extends Model {
 	@Column
 	subscription: string;
 
-	@Column
-	maxFolderSize: number;
-
 	@AllowNull(true)
 	@Column
 	stripeCustomerId: string;
@@ -63,10 +60,6 @@ export class User extends Model {
 
 	@Column
 	referredById: string | null;
-
-	// @HasMany(() => File, { onDelete: 'CASCADE' })
-	// @HasMany(() => File)
-	// userFiles: File[];
 
 	@HasMany(() => Referrals, 'referrerId')
 	referralsSent: Referrals[];

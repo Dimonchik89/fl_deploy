@@ -52,11 +52,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "summary": "Send your password and email as login for registration in the body of the request",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -128,11 +131,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "summary": "send your password and email as login in the request body",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -150,7 +156,6 @@
                   "email": "test@gmail.com",
                   "subscription": "free",
                   "stripeCustomerId": null,
-                  "maxFolderSize": 104857600,
                   "currentTotalFolderSize": 54857600
                 }
               }
@@ -166,16 +171,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Send your access_token as a BEARER token to headers authorization to get user profile",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -205,6 +213,9 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
@@ -214,7 +225,7 @@
         ],
         "summary": "Send old refresh_token as a BEARER token to headers authorization to get new access token and refresh token",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -236,16 +247,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Send the access_token as a BEARER token for authorization headers to log out of the account",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -256,11 +270,14 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "summary": "Endpoint for registration and login using google account",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -271,11 +288,14 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "summary": "Endpoint to which redirection will occur after Google confirms the login. It will receive all the necessary data, create a user and redirect to the client page with the addition of searchParameters",
         "tags": [
-          "auth"
+          "Auth"
         ]
       }
     },
@@ -352,11 +372,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Get all products",
@@ -414,20 +437,12 @@
             }
           },
           "500": {
-            "description": "Request body not added",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 500,
-                  "message": "Internal server error"
-                }
-              }
-            }
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Request for creating a subscription. We receive the address to which we need redirect. You need to add the selected subscription ID and user access_token to the header",
@@ -474,20 +489,12 @@
             }
           },
           "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 500,
-                  "message": "Internal server error"
-                }
-              }
-            }
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "After the operation checkout (breakpoint \"checkout\") redirects us to the user page which is responsible for a successful subscription. On they we make a request for the current breakpoint (success) and as searchParams session_id we pass the session_id obtained from the URL string by which we will receive a session with the current subscription and make changes to the user table",
@@ -535,14 +542,53 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Request to get the URL, so that later you can go to it and end up on a page with information about the user's subscription and the ability to unsubscribe. Need to send access token in header",
+        "tags": [
+          "Stripe"
+        ]
+      }
+    },
+    "/api/stripe/admin/apply-bonus": {
+      "post": {
+        "operationId": "StripeController_adminApplyBonus",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminApplyBonusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bonus applied successfully"
+          },
+          "403": {
+            "description": "Forbidden: Admin only"
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin: Apply manual bonus to user balance",
         "tags": [
           "Stripe"
         ]
@@ -564,8 +610,16 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Stripe"
         ]
@@ -623,11 +677,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Create a post",
@@ -687,8 +744,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Get all posts",
         "tags": [
           "Posts"
@@ -733,8 +798,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Get one posts",
         "tags": [
           "Posts"
@@ -754,20 +827,10 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Форма создания поста с файлами",
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "contentHtml": {
-                    "type": "string",
-                    "example": "<article><div><h2 style=\"color: red\">Strawberry title</h2><img style=\"width: 640px\" src=\"https://hips.hearstapps.com/clv.h-cdn.co/assets/15/22/1432664914-strawberry-facts1.jpg?crop=1xw:0.8332147937411095xh;center,center\" alt=\"strawberry\" /><p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quisquam omnis rerum cumque deserunt natus nam impedit consequuntur non id illo, dicta et, tenetur aliquam porro amet recusandae, sit odit vero!</p><hr /><h2>Subtitle</h2><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, a repellat. Corporis fugiat voluptatem quasi dolores optio dicta blanditiis modi inventore necessitatibus corrupti, ullam consequuntur nam atque sapiente quidem incidunt.</p></div></article>"
-                  }
-                },
-                "required": [
-                  "contentHtml"
-                ]
+                "$ref": "#/components/schemas/UpdatePostDto"
               }
             }
           }
@@ -808,11 +871,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Edit post",
@@ -866,11 +932,14 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "security": [
           {
-            "access_token": []
+            "bearer": []
           }
         ],
         "summary": "Delete post",
@@ -910,14 +979,12 @@
                       "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
                       "email": "user2@gmail.com",
                       "subscription": "free",
-                      "maxFolderSize": 50,
                       "createdAt": "2026-01-05T10:46:01.740Z"
                     },
                     {
                       "id": "c36825e1-1c05-4274-91b1-37489d268709",
                       "email": "user@gmail.com",
                       "subscription": "free",
-                      "maxFolderSize": 50,
                       "createdAt": "2026-01-05T10:45:57.113Z"
                     }
                   ]
@@ -947,11 +1014,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Get all users",
         "tags": [
-          "User"
+          "Users"
         ]
       }
     },
@@ -977,7 +1052,6 @@
                   "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
                   "email": "user2@gmail.com",
                   "subscription": "free",
-                  "maxFolderSize": 50,
                   "createdAt": "2026-01-05T10:46:01.740Z"
                 }
               }
@@ -1017,11 +1091,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Find one user",
         "tags": [
-          "User"
+          "Users"
         ]
       },
       "patch": {
@@ -1055,7 +1137,6 @@
                   "id": "e5f0f45f-7d23-4c2f-9ff8-a86d9369fdad",
                   "email": "user2@gmail.com",
                   "subscription": "free",
-                  "maxFolderSize": 50,
                   "createdAt": "2026-01-05T10:46:01.740Z"
                 }
               }
@@ -1095,11 +1176,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Update one user",
         "tags": [
-          "User"
+          "Users"
         ]
       },
       "delete": {
@@ -1160,11 +1249,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Delete user",
         "tags": [
-          "User"
+          "Users"
         ]
       }
     },
@@ -1218,11 +1315,115 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error."
           }
         },
         "summary": "Creating a record that a user registered using a friend's referral link",
         "tags": [
-          "referrals"
+          "Referrals"
+        ]
+      }
+    },
+    "/api/device": {
+      "post": {
+        "description": "Checks if the device serial number is already registered to the user. If it is new, registers it if the user has fewer than 2 devices.",
+        "operationId": "DeviceController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Device successfully verified or registered."
+          },
+          "400": {
+            "description": "Device limit reached or device belongs to another user."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register or verify a device",
+        "tags": [
+          "Devices"
+        ]
+      },
+      "get": {
+        "description": "Returns a list of all devices registered in the system.",
+        "operationId": "DeviceController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Return all devices."
+          },
+          "403": {
+            "description": "Forbidden (Admin only)."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all registered devices (Admin only)",
+        "tags": [
+          "Devices"
+        ]
+      }
+    },
+    "/api/device/{id}": {
+      "delete": {
+        "description": "Deletes a device registration for the authenticated user.",
+        "operationId": "DeviceController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device successfully removed."
+          },
+          "404": {
+            "description": "Device not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a device",
+        "tags": [
+          "Devices"
         ]
       }
     }
@@ -1287,6 +1488,25 @@
           "price"
         ]
       },
+      "AdminApplyBonusDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "example": "d0a5a5a5-a5a5-a5a5-a5a5-a5a5a5a5a5a5",
+            "description": "ID of the user to receive the bonus"
+          },
+          "amount": {
+            "type": "number",
+            "example": 5,
+            "description": "Amount of bonus in USD"
+          }
+        },
+        "required": [
+          "userId",
+          "amount"
+        ]
+      },
       "CreatePostDto": {
         "type": "object",
         "properties": {
@@ -1299,26 +1519,25 @@
           "contentHtml"
         ]
       },
+      "UpdatePostDto": {
+        "type": "object",
+        "properties": {
+          "contentHtml": {
+            "type": "string",
+            "example": "\n            <div>\n                <h2>Title</h2>\n                <p>Text</p>\n                <img src=\"image_link\" alt=\"image description\"/>\n            </div>\n        "
+          }
+        }
+      },
       "UpdateUserDto": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "example": "user@gmail.com"
-          },
-          "subscription": {
-            "type": "string",
-            "example": "free"
-          },
-          "maxFolderSize": {
-            "type": "number",
-            "example": 50
           }
         },
         "required": [
-          "email",
-          "subscription",
-          "maxFolderSize"
+          "email"
         ]
       },
       "CreateReferralDto": {
@@ -1338,6 +1557,19 @@
         "required": [
           "referral",
           "refereeId"
+        ]
+      },
+      "CreateDeviceDto": {
+        "type": "object",
+        "properties": {
+          "serialNumber": {
+            "type": "string",
+            "example": "SN-12345-ABCDE",
+            "description": "The unique serial number of the hardware device"
+          }
+        },
+        "required": [
+          "serialNumber"
         ]
       }
     }

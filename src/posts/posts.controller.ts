@@ -28,6 +28,7 @@ import {
 	ApiOperation,
 	ApiQuery,
 	ApiResponse,
+	ApiTags,
 } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
@@ -46,57 +47,15 @@ import {
 	UNAUTHORIZED_EXAMPLE,
 } from '../app.constants';
 
+@ApiTags('Posts')
+@ApiBearerAuth()
+@ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('posts')
 export class PostsController {
 	constructor(private readonly postsService: PostsService) {}
 
 	@ApiOperation({ summary: 'Create a post' })
 	@ApiExtraModels(CreatePostDto)
-	@ApiBearerAuth('access_token')
-	// @ApiConsumes('multipart/form-data')
-	// @ApiBody({
-	// 	description: 'Форма создания поста с файлами',
-	// 	schema: {
-	// 		type: 'object',
-	// 		properties: {
-	// 			title: { type: 'string', example: 'Мой пост' },
-	// 			text: { type: 'string', example: 'Основной текст' },
-	// 			subtitle: { type: 'string', example: 'Подзаголовок', nullable: true },
-	// 			subtext: {
-	// 				type: 'string',
-	// 				example: 'Дополнительный текст',
-	// 				nullable: true,
-	// 			},
-	// 			additionalLink: {
-	// 				type: 'string',
-	// 				example: 'https://example.com',
-	// 				nullable: true,
-	// 			},
-	// 			requiredFiles: {
-	// 				type: 'array',
-	// 				items: { type: 'string', format: 'binary' },
-	// 			},
-	// 			optionalFiles: {
-	// 				type: 'array',
-	// 				items: { type: 'string', format: 'binary' },
-	// 			},
-	// 		},
-	// 		required: ['title', 'text', 'requiredFiles'],
-	// 	},
-	// })
-	// @ApiBody({
-	// 	description: 'Форма создания поста с файлами',
-	// 	schema: {
-	// 		type: 'object',
-	// 		properties: {
-	// 			contentHtml: {
-	// 				type: 'string',
-	// 				example: CONTENT_HTML_EXAMPLE,
-	// 			},
-	// 		},
-	// 		required: ['contentHtml'],
-	// 	},
-	// })
 	@ApiResponse({
 		status: 201,
 		description: 'Post created',
@@ -112,12 +71,6 @@ export class PostsController {
 		description: 'Required fields are missing',
 		example: CREATE_FILE_ERROR_REQUIRE_FIELDS_EXAMPLE,
 	})
-	// @UseInterceptors(
-	// 	FileFieldsInterceptor([
-	// 		{ name: 'requiredFiles' },
-	// 		{ name: 'optionalFiles' },
-	// 	]),
-	// )
 	@Roles(Role.ADMIN)
 	@UseGuards(RolesGuard)
 	@UseGuards(JwtAuthGuard)
@@ -127,21 +80,6 @@ export class PostsController {
 	create(@Req() req: any, @Body() createPostDto: CreatePostDto) {
 		return this.postsService.create(createPostDto);
 	}
-	// create(
-	// 	@UploadedFiles()
-	// 	files: {
-	// 		requiredFiles?: Express.Multer.File[];
-	// 		optionalFiles?: Express.Multer.File[];
-	// 	},
-	// 	@Req() req: any,
-	// 	@Body() createPostDto: CreatePostDto,
-	// ) {
-	// 	return this.postsService.create({
-	// 		requiredFiles: files.requiredFiles,
-	// 		optionalFiles: files.optionalFiles,
-	// 		createPostDto,
-	// 	});
-	// }
 
 	@ApiOperation({ summary: 'Get all posts' })
 	@ApiQuery({
@@ -188,18 +126,6 @@ export class PostsController {
 	}
 
 	@ApiOperation({ summary: 'Edit post' })
-	@ApiBearerAuth('access_token')
-	@ApiConsumes('multipart/form-data')
-	@ApiBody({
-		description: 'Форма создания поста с файлами',
-		schema: {
-			type: 'object',
-			properties: {
-				contentHtml: { type: 'string', example: CONTENT_HTML_EXAMPLE },
-			},
-			required: ['contentHtml'],
-		},
-	})
 	@ApiResponse({
 		status: 201,
 		description: 'Post updated',
@@ -215,12 +141,6 @@ export class PostsController {
 		description: BAD_REQUEST,
 		example: BAD_REQUEST_EXAMPLE,
 	})
-	// @UseInterceptors(
-	// 	FileFieldsInterceptor([
-	// 		{ name: 'requiredFiles' },
-	// 		{ name: 'optionalFiles' },
-	// 	]),
-	// )
 	@Roles(Role.ADMIN)
 	@UseGuards(RolesGuard)
 	@UseGuards(JwtAuthGuard)
@@ -232,25 +152,8 @@ export class PostsController {
 			updatePostDto,
 		});
 	}
-	// update(
-	// 	@Param('id') id: string,
-	// 	@Body() updatePostDto: UpdatePostDto,
-	// 	@UploadedFiles()
-	// 	files: {
-	// 		requiredFiles?: Express.Multer.File[];
-	// 		optionalFiles?: Express.Multer.File[];
-	// 	},
-	// ) {
-	// 	return this.postsService.update({
-	// 		id,
-	// 		updatePostDto,
-	// 		requiredFiles: files.requiredFiles,
-	// 		optionalFiles: files.optionalFiles,
-	// 	});
-	// }
 
 	@ApiOperation({ summary: 'Delete post' })
-	@ApiBearerAuth('access_token')
 	@ApiResponse({
 		status: 200,
 		description: 'Delete file',

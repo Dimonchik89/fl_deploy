@@ -14,7 +14,8 @@ import {
 	USER_WITH_ID_NOT_FOUND_EXAMPLE,
 } from './referrals.constants';
 
-@ApiTags('referrals')
+@ApiTags('Referrals')
+@ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('referrals')
 export class ReferralsController {
 	constructor(private readonly referralsRepository: ReferralsService) {}

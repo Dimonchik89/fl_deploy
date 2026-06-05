@@ -7,11 +7,11 @@ export class UpdateUserDto {
 	@IsEmail()
 	email: string;
 
-	@ApiProperty({ example: 'free' })
-	@IsString()
-	subscription: string;
+	// @ApiProperty({ example: 'free' })
+	// @IsString()
+	// subscription: string;
 
-	@ApiProperty({ example: 50 })
-	@IsOptional()
-	maxFolderSize: number;
+	// @ApiProperty({ example: 50 })
+	// @IsOptional()
+	// maxFolderSize: number;
 }

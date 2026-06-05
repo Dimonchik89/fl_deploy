@@ -183,6 +183,35 @@ export class StripeService {
 		return { url: portalSession.url };
 	}
 
+	async adminApplyBonus(userId: string, amountUsd: number): Promise<{ success: boolean; message: string }> {
+		const user = await this.userRepository.findByPk(userId);
+		if (!user) {
+			throw new BadRequestException('User not found');
+		}
+
+		let customerId = user.stripeCustomerId;
+		if (!customerId) {
+			customerId = await this.createStripeCustomer(user.email);
+			user.stripeCustomerId = customerId;
+			await user.save();
+		}
+
+		const amountInCents = Math.round(amountUsd * 100);
+
+		// Создаем транзакцию баланса в Stripe
+		// Отрицательная сумма в Stripe balance transaction означает кредит (средства на счету клиента)
+		await this.stripe.customers.createBalanceTransaction(customerId, {
+			amount: -amountInCents,
+			currency: 'usd',
+			description: `Manual admin bonus applied: $${amountUsd}`,
+		});
+
+		return {
+			success: true,
+			message: `Successfully applied $${amountUsd} bonus to user ${user.email}`,
+		};
+	}
+
 	async webhook(
 		payload: Buffer,
 		signature: string,
