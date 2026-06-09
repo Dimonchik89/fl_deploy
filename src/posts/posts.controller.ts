@@ -49,18 +49,23 @@ import {
 } from '../app.constants';
 
 @ApiTags('Posts')
-@ApiBearerAuth()
+@ApiBearerAuth('access_token')
 @ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('posts')
 export class PostsController {
 	constructor(private readonly postsService: PostsService) {}
 
-	@ApiOperation({ summary: 'Create a post' })
+	@ApiOperation({ summary: 'Create a new post (Admin only)' })
 	@ApiExtraModels(CreatePostDto)
 	@ApiResponse({
 		status: 201,
-		description: 'Post created',
+		description: 'Post created successfully',
 		example: POST_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Bad Request (Validation failed)',
+		example: CREATE_FILE_ERROR_REQUIRE_FIELDS_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 401,
@@ -68,9 +73,8 @@ export class PostsController {
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@ApiResponse({
-		status: 400,
-		description: 'Required fields are missing',
-		example: CREATE_FILE_ERROR_REQUIRE_FIELDS_EXAMPLE,
+		status: 403,
+		description: 'Forbidden (Admin only)',
 	})
 	@Roles(Role.ADMIN)
 	@UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,18 +89,18 @@ export class PostsController {
 	@ApiQuery({
 		name: 'page',
 		required: false,
-		description: 'Page number (optional)',
+		description: 'Page number',
 		example: '1',
 	})
 	@ApiQuery({
 		name: 'limit',
 		required: false,
-		description: 'Number of elements per page (optional)',
+		description: 'Number of elements per page',
 		example: 10,
 	})
 	@ApiResponse({
 		status: 200,
-		description: 'Get posts',
+		description: 'Returns a list of posts',
 		example: GET_POSTS_SUCCESS_EXAMPLE,
 	})
 	@ApiResponse({
@@ -109,27 +113,36 @@ export class PostsController {
 		return this.postsService.findAll(param);
 	}
 
-	@ApiOperation({ summary: 'Get one posts' })
+	@ApiOperation({ summary: 'Get a single post by ID' })
 	@ApiResponse({
 		status: 200,
-		description: 'Get post',
+		description: 'Returns the post object',
 		example: POST_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 400,
-		description: BAD_REQUEST,
+		description: 'Bad Request (Invalid UUID format)',
 		example: BAD_REQUEST_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 404,
+		description: 'Post not found',
 	})
 	@Get(':id')
 	findOne(@Param('id', new ParseUUIDPipe()) id: string) {
 		return this.postsService.findOne(id);
 	}
 
-	@ApiOperation({ summary: 'Edit post' })
+	@ApiOperation({ summary: 'Update a post (Admin only)' })
 	@ApiResponse({
-		status: 201,
-		description: 'Post updated',
+		status: 200,
+		description: 'Post updated successfully',
 		example: POST_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Bad Request (Invalid UUID or validation failed)',
+		example: BAD_REQUEST_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 401,
@@ -137,9 +150,12 @@ export class PostsController {
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@ApiResponse({
-		status: 400,
-		description: BAD_REQUEST,
-		example: BAD_REQUEST_EXAMPLE,
+		status: 403,
+		description: 'Forbidden (Admin only)',
+	})
+	@ApiResponse({
+		status: 404,
+		description: 'Post not found',
 	})
 	@Roles(Role.ADMIN)
 	@UseGuards(JwtAuthGuard, RolesGuard)
@@ -155,21 +171,29 @@ export class PostsController {
 		});
 	}
 
-	@ApiOperation({ summary: 'Delete post' })
+	@ApiOperation({ summary: 'Delete a post (Admin only)' })
 	@ApiResponse({
 		status: 200,
-		description: 'Delete file',
+		description: 'Post deleted successfully',
 		example: DELETE_FILE_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 400,
-		description: BAD_REQUEST,
+		description: 'Bad Request (Invalid UUID)',
 		example: BAD_REQUEST_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 401,
 		description: 'Unauthorized',
 		example: UNAUTHORIZED_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 403,
+		description: 'Forbidden (Admin only)',
+	})
+	@ApiResponse({
+		status: 404,
+		description: 'Post not found',
 	})
 	@Roles(Role.ADMIN)
 	@UseGuards(JwtAuthGuard, RolesGuard)
