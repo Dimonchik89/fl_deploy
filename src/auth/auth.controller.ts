@@ -55,12 +55,12 @@ export class AuthController {
 	) {}
 
 	@ApiOperation({
-		summary:
-			'Send your password and email as login for registration in the body of the request',
+		summary: 'Register a new user',
+		description: 'Registers a user with email (login) and password. Returns access and refresh tokens.',
 	})
 	@ApiBody({
-		description: 'JSON with login and password for registration',
-		type: AuthDto,
+		description: 'Login and password for registration',
+		type: RegisterDto,
 	})
 	@ApiResponse({
 		status: 201,
@@ -69,13 +69,13 @@ export class AuthController {
 	})
 	@ApiResponse({
 		status: 400,
-		description: 'User is already registered or incorrect property',
+		description: 'Bad Request (User already registered or validation failed)',
 		examples: {
 			USER_ALREADY_REGISTERED: USER_ALREADY_REGISTERED_EXAMPLE,
 			PROPERTY_SHOULD_NOT_EXIST: PROPERTY_SHOULD_NOT_EXIST_EXAMPLE,
 		},
 	})
-	@UsePipes(new ValidationPipe({ whitelist: true }))
+	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Post('register')
 	async register(@Body() dto: RegisterDto) {
 		const oldUser = await this.authService.findUser(dto.login);
@@ -95,10 +95,11 @@ export class AuthController {
 	}
 
 	@ApiOperation({
-		summary: 'send your password and email as login in the request body',
+		summary: 'User login',
+		description: 'Authenticates a user and returns access and refresh tokens.',
 	})
 	@ApiBody({
-		description: 'JSON with login and password for Login',
+		description: 'Login and password for login',
 		type: AuthDto,
 	})
 	@ApiResponse({
@@ -108,16 +109,16 @@ export class AuthController {
 	})
 	@ApiResponse({
 		status: 400,
-		description: 'Unauthorized or incorrect property',
+		description: 'Bad Request (Validation failed)',
 		examples: {
-			USER_NOT_FOUND_ERROR: USER_NOT_FOUND_EXAMPLE,
 			PROPERTY_SHOULD_NOT_EXIST: PROPERTY_SHOULD_NOT_EXIST_EXAMPLE,
 		},
 	})
 	@ApiResponse({
 		status: 401,
-		description: 'Invalid password',
+		description: 'Unauthorized (Invalid credentials)',
 		examples: {
+			USER_NOT_FOUND_ERROR: USER_NOT_FOUND_EXAMPLE,
 			WRONG_PASSWORD_ERROR: INVALID_PASSWORD_EXAMPLE,
 		},
 	})
@@ -132,62 +133,63 @@ export class AuthController {
 
 	// -------------------------------- Посмотреть на необходимость наличия этого ендпоинта
 	@ApiOperation({
-		summary:
-			'Send your access_token as a BEARER token to headers authorization to get user profile',
+		summary: 'Get user profile',
+		description: 'Returns the profile details of the authenticated user.',
 	})
 	@ApiResponse({
 		status: 200,
-		description: 'Getting user profile',
+		description: 'User profile retrieved successfully',
 		example: USER_PROFILE_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 401,
-		description: UNAUTHORIZED_ERROR,
+		description: 'Unauthorized',
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth()
+	@ApiBearerAuth('access_token')
 	@Get('profile')
 	getProfile(@Req() req) {
 		return this.authService.getProfile(req.user.id);
 	}
 
 	@ApiOperation({
-		summary:
-			'Send old refresh_token as a BEARER token to headers authorization to get new access token and refresh token',
+		summary: 'Refresh JWT tokens',
+		description: 'Exchanges a valid refresh token for a new set of access and refresh tokens.',
 	})
 	@ApiResponse({
-		status: 201,
-		description: 'Get new access and refresh token',
+		status: 200,
+		description: 'Tokens refreshed successfully',
 		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE,
 	})
 	@ApiResponse({
 		status: 401,
-		description: UNAUTHORIZED_ERROR,
+		description: 'Unauthorized (Invalid or expired refresh token)',
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(RefreshAuthGuard)
 	@ApiBearerAuth('refresh_token')
+	@HttpCode(200)
 	@Post('refresh')
 	refresh(@Req() req) {
 		return this.authService.refreshToken(req.user);
 	}
 
 	@ApiOperation({
-		summary:
-			'Send the access_token as a BEARER token for authorization headers to log out of the account',
+		summary: 'User sign out',
+		description: 'Invalidates the current refresh token and logs the user out.',
 	})
 	@ApiResponse({
 		status: 200,
-		description: 'Log out',
+		description: 'Successfully logged out',
 	})
 	@ApiResponse({
 		status: 401,
-		description: UNAUTHORIZED_ERROR,
+		description: 'Unauthorized',
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(JwtAuthGuard)
-	@ApiBearerAuth()
+	@ApiBearerAuth('access_token')
 	@HttpCode(200)
 	@Post('signout')
 	signOut(@Req() req) {
@@ -195,9 +197,6 @@ export class AuthController {
 	}
 
 	// ------------------------- Роут для входа и регистрации через GOOGLE
-	@ApiOperation({
-		summary: 'Endpoint for registration and login using google account',
-	})
 	@ApiOperation({
 		summary: 'Google OAuth Login Entry Point',
 		description:
@@ -218,6 +217,7 @@ export class AuthController {
 			'   - **Desktop:** `http://localhost:5000/callback?code={tempCode}` (if state=desktop was used) \n' +
 			'   - **Web:** `{CLIENT_URL}/login?code={tempCode}` (default)',
 	})
+	@ApiResponse({ status: 302, description: 'Redirecting to client callback' })
 	@UseGuards(GoogleAuthGuard)
 	@Get('google/callback')
 	async googleCallback(@Req() req, @Res() res) {
@@ -246,7 +246,8 @@ export class AuthController {
 	})
 	@ApiResponse({
 		status: 401,
-		description: 'Invalid or expired temporary code',
+		description: 'Unauthorized (Invalid or expired temporary code)',
+		example: { message: 'Invalid or expired temporary code', statusCode: 401 },
 	})
 	@Post('exchange-code')
 	@HttpCode(200)
