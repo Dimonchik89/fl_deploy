@@ -10,6 +10,7 @@ import {
 	UseGuards,
 	Req,
 	ParseUUIDPipe,
+	Query,
 } from '@nestjs/common';
 import {
 	ApiBearerAuth,
@@ -24,28 +25,33 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
+import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 
 @ApiTags('Devices')
-@ApiBearerAuth()
+@ApiBearerAuth('access_token')
 @ApiResponse({ status: 500, description: 'Internal server error.' })
 @Controller('device')
 export class DeviceController {
 	constructor(private readonly deviceService: DeviceService) {}
 
 	@ApiOperation({
-		summary: 'Register or verify a device',
+		summary: 'Register a new device',
 		description:
-			'Checks if the device serial number is already registered to the user. If it is new, registers it if the user has fewer than 2 devices.',
+			'Registers a hardware device by its serial number. A user can have a maximum of 2 devices.',
 	})
 	@ApiResponse({
 		status: 201,
-		description: 'Device successfully verified or registered.',
+		description: 'Device successfully registered.',
 	})
 	@ApiResponse({
 		status: 400,
-		description: 'Device limit reached or device belongs to another user.',
+		description: 'Bad Request (Device limit reached or serial number already in use).',
 	})
-	@ApiResponse({ status: 401, description: 'Unauthorized.' })
+	@ApiResponse({
+		status: 401,
+		description: 'Unauthorized',
+		example: UNAUTHORIZED_EXAMPLE,
+	})
 	@UseGuards(JwtAuthGuard)
 	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Post()
@@ -55,14 +61,25 @@ export class DeviceController {
 
 	@ApiOperation({
 		summary: 'Get all registered devices (Admin only)',
-		description: 'Returns a list of all devices registered in the system.',
+		description: 'Returns a paginated list of all devices registered in the system.',
 	})
-	@ApiResponse({ status: 200, description: 'Return all devices.' })
-	@ApiResponse({ status: 403, description: 'Forbidden (Admin only).' })
+	@ApiResponse({
+		status: 200,
+		description: 'Return a list of all devices.',
+	})
+	@ApiResponse({
+		status: 401,
+		description: 'Unauthorized',
+		example: UNAUTHORIZED_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 403,
+		description: 'Forbidden (Admin only).',
+	})
 	@Roles(Role.ADMIN)
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get()
-	findAll(@Req() req, @Param() params: PaginationParamsDto) {
+	findAll(@Req() req, @Query() params: PaginationParamsDto) {
 		return this.deviceService.findAll(params);
 	}
 
@@ -70,8 +87,23 @@ export class DeviceController {
 		summary: 'Remove a device',
 		description: 'Deletes a device registration for the authenticated user.',
 	})
-	@ApiResponse({ status: 200, description: 'Device successfully removed.' })
-	@ApiResponse({ status: 404, description: 'Device not found.' })
+	@ApiResponse({
+		status: 200,
+		description: 'Device successfully removed.',
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Bad Request (Invalid UUID format).',
+	})
+	@ApiResponse({
+		status: 401,
+		description: 'Unauthorized',
+		example: UNAUTHORIZED_EXAMPLE,
+	})
+	@ApiResponse({
+		status: 404,
+		description: 'Device not found.',
+	})
 	@UseGuards(JwtAuthGuard)
 	@Delete(':id')
 	remove(@Param('id', new ParseUUIDPipe()) id: string, @Req() req) {
