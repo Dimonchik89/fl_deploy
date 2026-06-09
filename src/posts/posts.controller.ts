@@ -15,6 +15,7 @@ import {
 	UsePipes,
 	ValidationPipe,
 	Query,
+	ParseUUIDPipe,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -72,8 +73,7 @@ export class PostsController {
 		example: CREATE_FILE_ERROR_REQUIRE_FIELDS_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@HttpCode(201)
 	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Post()
@@ -121,7 +121,7 @@ export class PostsController {
 		example: BAD_REQUEST_EXAMPLE,
 	})
 	@Get(':id')
-	findOne(@Param('id') id: string) {
+	findOne(@Param('id', new ParseUUIDPipe()) id: string) {
 		return this.postsService.findOne(id);
 	}
 
@@ -142,11 +142,13 @@ export class PostsController {
 		example: BAD_REQUEST_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Patch(':id')
-	update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
+	update(
+		@Param('id', new ParseUUIDPipe()) id: string,
+		@Body() updatePostDto: UpdatePostDto,
+	) {
 		return this.postsService.update({
 			id,
 			updatePostDto,
@@ -170,11 +172,10 @@ export class PostsController {
 		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Delete(':id')
-	remove(@Param('id') id: string) {
+	remove(@Param('id', new ParseUUIDPipe()) id: string) {
 		return this.postsService.remove(id);
 	}
 }

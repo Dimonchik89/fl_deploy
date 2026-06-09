@@ -1,4 +1,9 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import {
+	Inject,
+	Injectable,
+	BadRequestException,
+	NotFoundException,
+} from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Post } from '../entities/post.entity';
@@ -102,6 +107,10 @@ export class PostsService {
 	async findOne(id: string): Promise<Post> {
 		try {
 			const post = await this.postRepository.findOne({ where: { id } });
+
+			if (!post) {
+				throw new NotFoundException('Post not found');
+			}
 
 			return post;
 		} catch (error) {
