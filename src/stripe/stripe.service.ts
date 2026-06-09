@@ -49,12 +49,15 @@ export class StripeService {
 	}
 
 	async getPricesAndProducts(): Promise<StripePrice[]> {
-		const products: Stripe.ApiList<StripePrice> = await this.stripe.prices.list(
-			{
-				expand: ['data.product'],
-			},
-		);
-		return products.data;
+		try {
+			const products: Stripe.ApiList<StripePrice> =
+				await this.stripe.prices.list({
+					expand: ['data.product'],
+				});
+			return products.data;
+		} catch (error) {
+			throw new BadRequestException(`Stripe error: ${error.message}`);
+		}
 	}
 
 	async checkout(priceId: string, userId: string): Promise<{ url: string }> {
@@ -89,7 +92,13 @@ export class StripeService {
 			throw new BadRequestException('User not found');
 		}
 
-		const price = await this.stripe.prices.retrieve(priceId);
+		let price;
+		try {
+			price = await this.stripe.prices.retrieve(priceId);
+		} catch (error) {
+			throw new BadRequestException(`Stripe price error: ${error.message}`);
+		}
+
 		if (!price || !price.active) {
 			throw new BadRequestException('No such price exists');
 		}
@@ -100,20 +109,33 @@ export class StripeService {
 		user.stripeCustomerId = customerId;
 		await user.save();
 
-		const session = await this.stripe.checkout.sessions.create({
-			mode: 'subscription',
-			line_items: [{ price: price.id, quantity: 1 }],
-			success_url: `${process.env.BASE_CLIENT_URL}/profile?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${process.env.BASE_CLIENT_URL}/profile`,
-			customer: user.stripeCustomerId, // Передаём customerId, чтобы Stripe понимал, что это существующий клиент
-		});
+		try {
+			const session = await this.stripe.checkout.sessions.create(
+				{
+					mode: 'subscription',
+					line_items: [{ price: price.id, quantity: 1 }],
+					success_url: `${process.env.BASE_CLIENT_URL}/profile?session_id={CHECKOUT_SESSION_ID}`,
+					cancel_url: `${process.env.BASE_CLIENT_URL}/profile`,
+					customer: user.stripeCustomerId,
+				},
+				{
+					idempotencyKey: `checkout-${userId}-${priceId}`,
+				},
+			);
 
-		return { url: session.url };
+			return { url: session.url };
+		} catch (error) {
+			throw new BadRequestException(`Stripe checkout error: ${error.message}`);
+		}
 	}
 
 	async createStripeCustomer(email: string): Promise<string> {
-		const customer = await this.stripe.customers.create({ email });
-		return customer.id;
+		try {
+			const customer = await this.stripe.customers.create({ email });
+			return customer.id;
+		} catch (error) {
+			throw new BadRequestException(`Stripe customer error: ${error.message}`);
+		}
 	}
 
 	async success(
@@ -132,12 +154,31 @@ export class StripeService {
 			throw new UnauthorizedException('User not found');
 		}
 
+		let session: Stripe.Checkout.Session;
 		try {
-			await this.stripe.checkout.sessions.retrieve(session_id, {
-				extend: ['subscription', 'subscription.plan.product'],
+			session = await this.stripe.checkout.sessions.retrieve(session_id, {
+				expand: ['subscription', 'subscription.plan.product'],
 			});
 		} catch (error) {
-			throw new BadRequestException('No such checkout session');
+			throw new BadRequestException(`Stripe session error: ${error.message}`);
+		}
+
+		if (session.customer !== user.stripeCustomerId) {
+			throw new UnauthorizedException('This session does not belong to you');
+		}
+
+		if (session.payment_status !== 'paid') {
+			throw new BadRequestException('Payment not confirmed');
+		}
+
+		// Update user if not already updated by webhook
+		const subscription = session.subscription as Stripe.Subscription;
+		const product = subscription.items.data[0].price.product as Stripe.Product;
+
+		if (user.subscription !== product.name) {
+			user.subscription = product.name as SubscriptionEnum;
+			user.subscriptionId = subscription.id;
+			await user.save();
 		}
 
 		const tailUser: TailUserForToken = {
@@ -145,7 +186,7 @@ export class StripeService {
 			email: user.email,
 			subscription: user.subscription,
 			stripeCustomerId: user.stripeCustomerId,
-			role: Role.USER,
+			role: user.role,
 		};
 
 		const { accessToken, refreshToken } =
@@ -175,15 +216,22 @@ export class StripeService {
 			throw new BadRequestException(CUSTOMER_NOT_FOUND_ERROR);
 		}
 
-		const portalSession = await this.stripe.billingPortal.sessions.create({
-			customer: customerId,
-			return_url: `${process.env.BASE_CLIENT_URL}/profile`,
-		});
+		try {
+			const portalSession = await this.stripe.billingPortal.sessions.create({
+				customer: customerId,
+				return_url: `${process.env.BASE_CLIENT_URL}/profile`,
+			});
 
-		return { url: portalSession.url };
+			return { url: portalSession.url };
+		} catch (error) {
+			throw new BadRequestException(`Stripe portal error: ${error.message}`);
+		}
 	}
 
-	async adminApplyBonus(userId: string, amountUsd: number): Promise<{ success: boolean; message: string }> {
+	async adminApplyBonus(
+		userId: string,
+		amountUsd: number,
+	): Promise<{ success: boolean; message: string }> {
 		const user = await this.userRepository.findByPk(userId);
 		if (!user) {
 			throw new BadRequestException('User not found');
@@ -200,16 +248,27 @@ export class StripeService {
 
 		// Создаем транзакцию баланса в Stripe
 		// Отрицательная сумма в Stripe balance transaction означает кредит (средства на счету клиента)
-		await this.stripe.customers.createBalanceTransaction(customerId, {
-			amount: -amountInCents,
-			currency: 'usd',
-			description: `Manual admin bonus applied: $${amountUsd}`,
-		});
+		const today = new Date().toISOString().split('T')[0];
+		try {
+			await this.stripe.customers.createBalanceTransaction(
+				customerId,
+				{
+					amount: -amountInCents,
+					currency: 'usd',
+					description: `Manual admin bonus applied: $${amountUsd}`,
+				},
+				{
+					idempotencyKey: `admin-bonus-${userId}-${amountInCents}-${today}`, // Prevent duplicate bonus application on the same day
+				},
+			);
 
-		return {
-			success: true,
-			message: `Successfully applied $${amountUsd} bonus to user ${user.email}`,
-		};
+			return {
+				success: true,
+				message: `Successfully applied $${amountUsd} bonus to user ${user.email}`,
+			};
+		} catch (error) {
+			throw new BadRequestException(`Stripe bonus error: ${error.message}`);
+		}
 	}
 
 	async webhook(

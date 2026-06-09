@@ -34,95 +34,87 @@ export class StripeWebhookService {
 		});
 	}
 
-	// private returnNewFolderSize(subscriptionName: string): number {
-	// 	switch (subscriptionName?.toLowerCase()) {
-	// 		case SubscriptionEnum.pro:
-	// 			return 150;
-	// 		case SubscriptionEnum.started:
-	// 			return 100;
-	// 		default:
-	// 			return 50;
-	// 	}
-	// }
-
 	async checkAndApplyReferralBonus(referrerId: string) {
-		const transaction = await this.sequelize.transaction();
-		try {
-			// Ищем всех друзей, которые оплатили (converted), но еще НЕ были использованы для бонуса (bonusApplied: false)
-			// Добавляем order и lock для обеспечения атомарности и предотвращения race conditions
-			const activeReferrals = await this.referralsRepository.findAll({
-				where: {
-					referrerId,
-					status: 'converted',
-					bonusApplied: false,
-				},
-				limit: 3,
-				order: [['id', 'ASC']],
-				lock: transaction.LOCK.UPDATE,
-				transaction,
-			});
-
-			if (activeReferrals.length < 3) {
-				await transaction.commit();
-				return;
-			}
-
-			const referrerUser = await this.userRepository.findOne({
-				where: { id: referrerId },
-				transaction,
-			});
-
-			if (!referrerUser || !referrerUser.stripeCustomerId) {
-				await transaction.commit();
-				return;
-			}
-
-			// Начисляем кредит в Stripe (Customer Balance)
-			// Допустим, твоя подписка стоит 500 центов ($5.00)
-			const AMOUNT_TO_CREDIT = 500;
-			const usedIds = activeReferrals.map((ref) => ref.id);
-
-			// Создаем ключ идемпотентности на основе ID рефералов, чтобы избежать дублей в Stripe
-			const idempotencyKey = `referral-bonus-${referrerId}-${usedIds.sort().join('-')}`;
-
-			// Сначала обновляем статус в нашей базе (в рамках транзакции)
-			await this.referralsRepository.update(
-				{ bonusApplied: true },
-				{
-					where: { id: usedIds },
+		let continueProcessing = true;
+		while (continueProcessing) {
+			const transaction = await this.sequelize.transaction();
+			try {
+				// Ищем всех друзей, которые оплатили (converted), но еще НЕ были использованы для бонуса (bonusApplied: false)
+				// Добавляем order и lock для обеспечения атомарности и предотвращения race conditions
+				const activeReferrals = await this.referralsRepository.findAll({
+					where: {
+						referrerId,
+						status: 'converted',
+						bonusApplied: false,
+					},
+					limit: 3,
+					order: [['id', 'ASC']],
+					lock: transaction.LOCK.UPDATE,
 					transaction,
-				},
-			);
+				});
 
-			// Вызываем Stripe API с ключом идемпотентности
-			await this.stripe.customers.createBalanceTransaction(
-				referrerUser.stripeCustomerId,
-				{
-					amount: -AMOUNT_TO_CREDIT, // минус означает кредит (баланс пользователя), плюс - долг
-					currency: 'usd',
-					description: 'Bonus for inviting 3 friends',
-				},
-				{
-					idempotencyKey,
-				},
-			);
+				if (activeReferrals.length < 3) {
+					await transaction.commit();
+					continueProcessing = false;
+					break;
+				}
 
-			// Фиксируем изменения в базе
-			await transaction.commit();
-			this.logger.log(`Бонус начислен пользователю ${referrerId}`);
+				const referrerUser = await this.userRepository.findOne({
+					where: { id: referrerId },
+					transaction,
+				});
 
-			await this.mailerService.sendMail({
-				to: referrerUser.email,
-				subject: 'You just earned $5.00! Thanks to your friends',
-				html: templateMail(referrerUser.email),
-			});
+				if (!referrerUser || !referrerUser.stripeCustomerId) {
+					await transaction.commit();
+					return;
+				}
 
-			// Если у юзера было, например, сразу 6 или 9 друзей,
-			// проверяем еще раз ПОСЛЕ завершения текущей транзакции
-			await this.checkAndApplyReferralBonus(referrerId);
-		} catch (error) {
-			if (transaction) await transaction.rollback();
-			this.logger.error('Ошибка при начислении кредита в Stripe:', error);
+				// Начисляем кредит в Stripe (Customer Balance)
+				// Допустим, твоя подписка стоит 500 центов ($5.00)
+				const AMOUNT_TO_CREDIT = 500;
+				const usedIds = activeReferrals.map((ref) => ref.id);
+
+				// Создаем ключ идемпотентности на основе ID рефералов, чтобы избежать дублей в Stripe
+				const idempotencyKey = `referral-bonus-${referrerId}-${usedIds.sort().join('-')}`;
+
+				// Сначала обновляем статус в нашей базе (в рамках транзакции)
+				await this.referralsRepository.update(
+					{ bonusApplied: true },
+					{
+						where: { id: usedIds },
+						transaction,
+					},
+				);
+
+				// Вызываем Stripe API с ключом идемпотентности
+				await this.stripe.customers.createBalanceTransaction(
+					referrerUser.stripeCustomerId,
+					{
+						amount: -AMOUNT_TO_CREDIT, // минус означает кредит (баланс пользователя), плюс - долг
+						currency: 'usd',
+						description: 'Bonus for inviting 3 friends',
+					},
+					{
+						idempotencyKey,
+					},
+				);
+
+				// Фиксируем изменения в базе
+				await transaction.commit();
+				this.logger.log(`Бонус начислен пользователю ${referrerId}`);
+
+				await this.mailerService.sendMail({
+					to: referrerUser.email,
+					subject: 'You just earned $5.00! Thanks to your friends',
+					html: templateMail(referrerUser.email),
+				});
+
+				// Цикл продолжится и проверит, есть ли еще тройки друзей
+			} catch (error) {
+				if (transaction) await transaction.rollback();
+				this.logger.error('Ошибка при начислении кредита в Stripe:', error);
+				continueProcessing = false;
+			}
 		}
 	}
 
@@ -144,65 +136,59 @@ export class StripeWebhookService {
 		switch (event.type) {
 			// Событие срабатывает при первой успешной оплате, создающей подписку.
 			// Именно здесь мы записываем данные о новой подписке в нашу базу.
-			// case 'checkout.session.completed': {
-			//     console.log(`Checkout session completed`);
-			//     const session = object as Stripe.Checkout.Session;
-			//     // Чтобы получить данные о продукте, нужно развернуть подписку
-			//     const subscription = await this.stripe.subscriptions.retrieve(
-			//         session.subscription as string,
-			//         { expand: ['items.data.price.product'] }
-			//     );
-			//     const product = subscription.items.data[0].price.product as StripeProduct;
-			//     console.log("completed product!!!!!!!!!!!!!!!", product);
-
-			//     if (user) {
-			//         user.subscription = product.name as SubscriptionEnum;
-			//         user.maxFolderSize = this.returnNewFolderSize(product.name as string);
-			//         user.subscriptionId = subscription.id;
-			//         user.stripeCustomerId = session.customer as string;
-			//         await user.save();
-			//     } else {
-			//         console.log(`New user via checkout, but not found in DB. Data:`, object);
-			//     }
-			//     break;
-			// }
-
 			case 'checkout.session.completed': {
 				this.logger.log(`Checkout session completed`);
 				const session = object as Stripe.Checkout.Session;
-				// Чтобы получить данные о продукте, нужно развернуть подписку
-				// const subscription = await this.stripe.subscriptions.retrieve(
-				//     session.subscription as string,
-				//     { expand: ['items.data.price.product'] }
-				// );
-				// const product = subscription.items.data[0].price.product as StripeProduct;
-				// console.log("completed subscription!!!!!!!!!!!!!!!", subscription);
-				// console.log("completed product!!!!!!!!!!!!!!!", product);
 
-				// if (subscription.status === 'canceled') {
-				//     user.subscription = SubscriptionEnum.free;
-				//     user.maxFolderSize = this.returnNewFolderSize(SubscriptionEnum.free);
-				//     user.subscriptionId = null; // Обнуляем ID подписки
-				//     await user.save();
-				//     await this.stripe.subscriptions.cancel(user.subscriptionId);
-				// } else if (user) {
-				//     if (user.subscriptionId && user.subscriptionId !== subscription.id) {
-				//         console.log(`User already has a subscription: ${user.subscriptionId}. Canceling it.`);
-				//         try {
-				//             await this.stripe.subscriptions.cancel(user.subscriptionId);
-				//         } catch (error) {
-				//             console.error('Failed to cancel old subscription:', error);
-				//         }
-				//     }
+				if (session.payment_status !== 'paid') {
+					this.logger.warn(`Checkout session ${session.id} not paid yet`);
+					break;
+				}
 
-				//     user.subscription = product.name as SubscriptionEnum;
-				//     user.maxFolderSize = this.returnNewFolderSize(product.name as string);
-				//     user.subscriptionId = subscription.id;
-				//     await user.save();
-				// } else {
-				//     console.log(`New user via checkout, but not found in DB. Data:`, object);
-				// }
+				// Если пользователя не нашли в начале (например, новая сессия без customerId в нашей базе)
+				if (!user && session.customer) {
+					user = await this.userRepository.findOne({
+						where: { stripeCustomerId: session.customer as string },
+					});
+				}
 
+				if (!user) {
+					this.logger.error(
+						`User not found for session ${session.id} and customer ${session.customer}`,
+					);
+					break;
+				}
+
+				try {
+					const subscription = await this.stripe.subscriptions.retrieve(
+						session.subscription as string,
+						{ expand: ['items.data.price.product'] },
+					);
+					const product = subscription.items.data[0].price
+						.product as Stripe.Product;
+
+					if (
+						user.subscriptionId === subscription.id &&
+						user.subscription === product.name
+					) {
+						this.logger.log(
+							`[Stripe Webhook] User ${user.email} already up to date`,
+						);
+						break;
+					}
+
+					user.subscription = product.name as SubscriptionEnum;
+					user.subscriptionId = subscription.id;
+					await user.save();
+
+					this.logger.log(
+						`[Stripe Webhook] Successfully updated user ${user.email} to ${product.name}`,
+					);
+				} catch (error) {
+					this.logger.error(
+						`Error processing checkout.session.completed: ${error.message}`,
+					);
+				}
 				break;
 			}
 
@@ -246,22 +232,62 @@ export class StripeWebhookService {
 			// Событие срабатывает каждый раз, когда Stripe успешно снимает платеж по подписке.
 			// Здесь можно добавить логику, если нужно. Например, отправить уведомление.
 			case 'invoice.paid': {
-				// ---------- Тест изменения статуса подписки в рефералке -------------
+				this.logger.log(`Invoice paid for user ${user?.email}`);
+				const invoice = object as Stripe.Invoice;
 
-				await this.referralsRepository.update(
-					{ status: 'converted' },
-					{ where: { refereeId: user.id } },
-				);
+				// 1. Обновляем статус подписки пользователя, если это инвойс по подписке
+				if (invoice.subscription && user) {
+					const transaction = await this.sequelize.transaction();
+					try {
+						const subscription = await this.stripe.subscriptions.retrieve(
+							invoice.subscription as string,
+							{ expand: ['items.data.price.product'] },
+						);
+						const product = subscription.items.data[0].price
+							.product as Stripe.Product;
 
-				const referralEntry = await this.referralsRepository.findOne({
-					where: { refereeId: user.id },
-				});
+						if (
+							user.subscriptionId !== subscription.id ||
+							user.subscription !== product.name
+						) {
+							user.subscription = product.name as SubscriptionEnum;
+							user.subscriptionId = subscription.id;
+							await user.save();
+							this.logger.log(
+								`User ${user.email} subscription fulfilled via invoice.paid`,
+							);
+						}
 
-				if (referralEntry) {
-					await this.checkAndApplyReferralBonus(referralEntry.referrerId);
+						await transaction.commit();
+					} catch (error) {
+						await transaction.rollback();
+						this.logger.error(
+							`Error updating user subscription in invoice.paid: ${error.message}`,
+						);
+					}
 				}
-				// -----------------------
-				this.logger.log('Invoice paid');
+
+				// 2. Логика реферальной системы
+				if (user) {
+					await this.referralsRepository.update(
+						{ status: 'converted' },
+						{
+							where: {
+								refereeId: user.id,
+								status: 'pending',
+							},
+						},
+					);
+
+					const referralEntry = await this.referralsRepository.findOne({
+						where: { refereeId: user.id },
+					});
+
+					if (referralEntry) {
+						await this.checkAndApplyReferralBonus(referralEntry.referrerId);
+					}
+				}
+
 				break;
 			}
 
@@ -293,14 +319,14 @@ export class StripeWebhookService {
 					break;
 				}
 
+				const product = subscription.items.data[0].price
+					.product as Stripe.Product;
+
 				if (
 					subscription.status === 'active' ||
-					subscription.status == 'trialing'
+					subscription.status === 'trialing'
 				) {
-					const product = subscription.items.data[0].price
-						.product as StripeProduct;
-
-					// защита от дублей (Stripe может слать одно и то же событие несколько раз)
+					// Если подписка активна или в триале, обновляем данные
 					if (
 						user.subscriptionId === subscription.id &&
 						user.subscription === product.name
@@ -314,10 +340,16 @@ export class StripeWebhookService {
 					);
 					user.subscription = product.name as SubscriptionEnum;
 					user.subscriptionId = subscription.id;
-
-					await user.save();
+				} else {
+					// В любом другом случае (past_due, unpaid, canceled, incomplete) - понижаем до free
+					this.logger.warn(
+						`[Stripe Webhook] Subscription status is ${subscription.status}. Downgrading ${user.email} to free.`,
+					);
+					user.subscription = SubscriptionEnum.free;
+					user.subscriptionId = subscription.id; // Оставляем ID, чтобы знать, какая подписка проблемная
 				}
 
+				await user.save();
 				break;
 			}
 

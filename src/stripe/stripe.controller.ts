@@ -11,6 +11,8 @@ import {
 	RawBodyRequest,
 	Req,
 	UseGuards,
+	UsePipes,
+	ValidationPipe,
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -80,7 +82,7 @@ export class StripeController {
 	})
 	@ApiBody({
 		description:
-			'object with key "type" and value corresponding to the priceId of the product',
+			'object with key "price" corresponding to the priceId of the product',
 		type: CheckoutDto,
 	})
 	@ApiResponse({
@@ -95,11 +97,12 @@ export class StripeController {
 	})
 	@ApiResponse({
 		status: 400,
-		description: 'No such price',
+		description: 'Bad Request (e.g. invalid priceId, Stripe error)',
 		example: NO_SUCH_PRICE_EXAMPLE,
 	})
 	@HttpCode(200)
 	@UseGuards(JwtAuthGuard)
+	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Post('checkout')
 	async checkout(@Body() dto: CheckoutDto, @Req() req) {
 		return await this.stripeService.checkout(dto.price, req.user.id);
@@ -107,17 +110,27 @@ export class StripeController {
 
 	@ApiOperation({
 		summary:
-			'After the operation checkout (breakpoint "checkout") redirects us to the user page which is responsible for a successful subscription. On they we make a request for the current breakpoint (success) and as searchParams session_id we pass the session_id obtained from the URL string by which we will receive a session with the current subscription and make changes to the user table',
+			'Verify successful checkout session and update user subscription. Returns new tokens.',
 	})
 	@ApiResponse({
 		status: 200,
-		description: 'User data updated',
+		description: 'User data updated, returns new access and refresh tokens',
 		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE,
 	})
 	@ApiResponse({
-		status: 404,
-		description: 'No such checkout.session',
-		example: NO_SUCH_CHECKOUT_SESSION_EXAMPLE,
+		status: 400,
+		description:
+			'Bad Request (e.g. payment not confirmed, Stripe session error)',
+		example: { message: 'Payment not confirmed', statusCode: 400 },
+	})
+	@ApiResponse({
+		status: 401,
+		description:
+			'Unauthorized (e.g. user not found, session does not belong to user)',
+		example: {
+			message: 'This session does not belong to you',
+			statusCode: 401,
+		},
 	})
 	@UseGuards(JwtAuthGuard)
 	@Get('success')
@@ -125,65 +138,30 @@ export class StripeController {
 		return this.stripeService.success(query.session_id, req.user.id);
 	}
 
-	// @ApiOperation({
-	// 	summary:
-	// 		"Request to get the URL, so that later you can go to it and end up on a page with information about the user's subscription and the ability to unsubscribe",
-	// })
-	// @ApiResponse({
-	// 	status: 200,
-	// 	description: 'Success',
-	// 	example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE,
-	// })
-	// @ApiResponse({
-	// 	status: 400,
-	// 	description: 'Customer not found',
-	// 	example: CUSTOMER_NOT_FOUND_EXAMPLE,
-	// })
-	// @ApiResponse({
-	// 	status: 404,
-	// 	description: 'Not Found',
-	// 	example: NO_SUCH_FILE_OR_DIRECTORY,
-	// })
-	// @UseGuards(JwtAuthGuard)
-	// @ApiBearerAuth('access_token')
-	// @Get('customer/:customerId')
-	// async customerInfo(@Param('customerId') customerId: string, @Req() req) {
-	// 	return this.stripeService.customerInfo(customerId, req.user.id);
-	// }
-
 	@ApiOperation({
 		summary:
-			"Request to get the URL, so that later you can go to it and end up on a page with information about the user's subscription and the ability to unsubscribe. Need to send access token in header",
+			'Request to get the Billing Portal URL, so the user can manage or cancel their subscription.',
 	})
 	@ApiResponse({
 		status: 200,
 		description: 'Success',
-		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE,
+		example: { url: 'https://billing.stripe.com/p/session' },
 	})
 	@ApiResponse({
 		status: 400,
-		description: 'Customer not found',
+		description: 'Customer not found in user record',
 		example: CUSTOMER_NOT_FOUND_EXAMPLE,
 	})
 	@ApiResponse({
-		status: 404,
-		description: 'Not Found',
-		example: NO_SUCH_FILE_OR_DIRECTORY,
+		status: 401,
+		description: 'Unauthorized',
+		example: UNAUTHORIZED_EXAMPLE,
 	})
 	@UseGuards(JwtAuthGuard)
 	@Get('customer')
 	async customerInfo(@Req() req) {
-		const customerId = req.user.stripeCustomerId;
-		const token = req.headers.authorization.split(' ').pop();
-
-		const decoded = await this.jwtService.decode(token);
-
-		if (!decoded.stripeCustomerId) {
-			throw new BadRequestException('Customer not found');
-		}
-
 		return this.stripeService.customerInfo(
-			decoded.stripeCustomerId,
+			req.user.stripeCustomerId,
 			req.user.id,
 		);
 	}
@@ -192,8 +170,13 @@ export class StripeController {
 	@ApiBody({ type: AdminApplyBonusDto })
 	@ApiResponse({ status: 200, description: 'Bonus applied successfully' })
 	@ApiResponse({ status: 403, description: 'Forbidden: Admin only' })
+	@ApiResponse({
+		status: 400,
+		description: 'Bad Request (e.g. user not found, Stripe error)',
+	})
 	@Post('admin/apply-bonus')
 	@UseGuards(JwtAuthGuard, RolesGuard)
+	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Roles(Role.ADMIN)
 	async adminApplyBonus(@Body() dto: AdminApplyBonusDto) {
 		return this.stripeService.adminApplyBonus(dto.userId, dto.amount);
@@ -204,11 +187,6 @@ export class StripeController {
 		@Headers('stripe-signature') signature: string,
 		@Req() req: RawBodyRequest<Request>,
 	) {
-		// let payload = req.rawBody;
-		// const sig = req.headers['stripe-signature'];
-
-		// return this.stripeService.webhook(payload, sig);
-
 		const payload = req.rawBody;
 
 		if (!payload) {
