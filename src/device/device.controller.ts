@@ -9,6 +9,7 @@ import {
 	ValidationPipe,
 	UseGuards,
 	Req,
+	ParseUUIDPipe,
 } from '@nestjs/common';
 import {
 	ApiBearerAuth,
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PaginationParamsDto } from './dto/pagination-params.dto';
 
 @ApiTags('Devices')
 @ApiBearerAuth()
@@ -60,8 +62,8 @@ export class DeviceController {
 	@Roles(Role.ADMIN)
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get()
-	findAll(@Req() req) {
-		return this.deviceService.findAll();
+	findAll(@Req() req, @Param() params: PaginationParamsDto) {
+		return this.deviceService.findAll(params);
 	}
 
 	@ApiOperation({
@@ -72,7 +74,7 @@ export class DeviceController {
 	@ApiResponse({ status: 404, description: 'Device not found.' })
 	@UseGuards(JwtAuthGuard)
 	@Delete(':id')
-	remove(@Param('id') id: string, @Req() req) {
+	remove(@Param('id', new ParseUUIDPipe()) id: string, @Req() req) {
 		return this.deviceService.remove({ deviceId: id, userId: req.user.id });
 	}
 }

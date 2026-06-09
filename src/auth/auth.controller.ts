@@ -200,9 +200,10 @@ export class AuthController {
 	})
 	@ApiOperation({
 		summary: 'Google OAuth Login Entry Point',
-		description: 'Redirects the user to Google Login page. \n\n' +
+		description:
+			'Redirects the user to Google Login page. \n\n' +
 			'**Desktop App (Python) usage:** Append `?state=desktop` to the URL to ensure redirection back to `http://localhost:5000`. \n\n' +
-			'**Web App usage:** Default behavior, redirects back to the configured Client URL.'
+			'**Web App usage:** Default behavior, redirects back to the configured Client URL.',
 	})
 	@UseGuards(GoogleAuthGuard)
 	@Get('google/login')
@@ -210,18 +211,19 @@ export class AuthController {
 
 	@ApiOperation({
 		summary: 'Google OAuth Callback (Internal)',
-		description: 'Endpoint where Google redirects the user after authentication. \n\n' +
+		description:
+			'Endpoint where Google redirects the user after authentication. \n\n' +
 			'1. Generates a short-lived (60s) temporary exchange code. \n' +
 			'2. Redirects the user back to the platform: \n' +
 			'   - **Desktop:** `http://localhost:5000/callback?code={tempCode}` (if state=desktop was used) \n' +
-			'   - **Web:** `{CLIENT_URL}/login?code={tempCode}` (default)'
+			'   - **Web:** `{CLIENT_URL}/login?code={tempCode}` (default)',
 	})
 	@UseGuards(GoogleAuthGuard)
 	@Get('google/callback')
 	async googleCallback(@Req() req, @Res() res) {
 		const tempCode = await this.authService.generateAuthCode(req.user.id);
 
-		// Проверяем, откуда пришел пользователь (через параметр state в OAuth)
+		// // Проверяем, откуда пришел пользователь (через параметр state в OAuth)
 		const isDesktop = req.query.state === 'desktop';
 		const redirectUrl = isDesktop
 			? `http://localhost:5000/callback?code=${tempCode}`
@@ -230,24 +232,25 @@ export class AuthController {
 		res.redirect(redirectUrl);
 	}
 
-	@ApiOperation({ 
+	@ApiOperation({
 		summary: 'Exchange temporary code for JWT tokens',
-		description: 'After receiving a `code` via redirect (from Google OAuth), the client (Web or Desktop) must call this endpoint to receive the final Access and Refresh tokens. \n\n' +
-			'The code is one-time use and expires in 60 seconds.'
+		description:
+			'After receiving a `code` via redirect (from Google OAuth), the client (Web or Desktop) must call this endpoint to receive the final Access and Refresh tokens. \n\n' +
+			'The code is one-time use and expires in 60 seconds.',
 	})
 	@ApiBody({ type: ExchangeCodeDto })
-	@ApiResponse({ 
-		status: 200, 
-		description: 'Tokens successfully generated', 
-		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE 
+	@ApiResponse({
+		status: 200,
+		description: 'Tokens successfully generated',
+		example: USER_ACCESS_TOKEN_AND_REFRESH_TOKEN_EXAMPLE,
 	})
-	@ApiResponse({ 
-		status: 401, 
-		description: 'Invalid or expired temporary code' 
+	@ApiResponse({
+		status: 401,
+		description: 'Invalid or expired temporary code',
 	})
 	@Post('exchange-code')
 	@HttpCode(200)
-	async exchangeCode(@Body() { code }: ExchangeCodeDto) {
-		return this.authService.exchangeCode(code);
+	async exchangeCode(@Body() body: ExchangeCodeDto) {
+		return this.authService.exchangeCode(body?.code);
 	}
 }

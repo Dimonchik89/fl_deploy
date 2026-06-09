@@ -18,7 +18,7 @@ export class Device extends Model {
 	})
 	id: string;
 
-	@Column
+	@Column({ unique: true, allowNull: false })
 	serialNumber: string;
 
 	@ForeignKey(() => User)

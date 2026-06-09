@@ -12,6 +12,7 @@ module.exports = {
       serialNumber: {
         type: Sequelize.STRING,
         allowNull: false,
+        unique: true,
       },
       userId: {
         type: Sequelize.UUID,
