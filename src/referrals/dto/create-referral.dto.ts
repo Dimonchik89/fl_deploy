@@ -1,20 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Length, Max } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreateReferralDto {
 	@ApiProperty({
-		description: 'Referral link',
+		description: 'Referral code of the person who invited',
 		example: '6229bea9-29e5-4532-8241-bd193b1ee2bf',
 	})
 	@IsString()
-	@Max(250)
+	@IsNotEmpty()
 	referral: string;
 
 	@ApiProperty({
-		description: 'User ID',
+		description: 'User ID of the invited person',
 		example: 'a2ab20fc-b7de-4d91-9c59-c7d8a79ad811',
 	})
-	@IsString()
-	@Max(250)
+	@IsUUID()
+	@IsNotEmpty()
 	refereeId: string;
 }
