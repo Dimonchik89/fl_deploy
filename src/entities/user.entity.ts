@@ -9,9 +9,7 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
-import { File } from './file.entity';
 import { Role } from '../auth/enums/role.enum';
-import { DataTypes } from 'sequelize';
 import { SubscriptionEnum } from 'src/stripe/stripe.types';
 import { Referrals } from './referrals.entity';
 import { Device } from './device.entity';
@@ -34,7 +32,7 @@ export class User extends Model {
 	passwordHash: string;
 
 	@Column({
-		type: DataTypes.ENUM(...Object.values(Role)),
+		type: DataType.ENUM(...Object.values(Role)),
 		allowNull: false,
 		defaultValue: Role.USER,
 	})
@@ -52,21 +50,27 @@ export class User extends Model {
 	@Column
 	stripeCustomerId: string;
 
+	@AllowNull(true)
 	@Column
 	subscriptionId: string;
 
+	@AllowNull(true)
 	@Column
 	referralCode: string;
 
-	@Column
+	@AllowNull(true)
+	@Column({ type: DataType.UUID })
 	referredById: string | null;
 
 	@HasMany(() => Referrals, 'referrerId')
 	referralsSent: Referrals[];
 
-	@HasMany(() => Referrals, 'refereeId')
+	@HasOne(() => Referrals, 'refereeId')
 	referralReceived: Referrals;
 
 	@HasMany(() => Device)
 	devices: Device[];
 }
+
+// referralsSent — это список тех, кого пригласили вы.
+// referralReceived — это запись о том, кто пригласил вас.

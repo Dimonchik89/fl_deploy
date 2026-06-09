@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '../entities/user.entity';
 import { USER_NOT_FOUND } from './user.constants';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationParamsDto } from '../device/dto/pagination-params.dto';
 
 @Injectable()
 export class UserService {
@@ -11,17 +12,34 @@ export class UserService {
 		return await this.userRepository.findOne({
 			where: { id },
 			include: ['devices'],
-			attributes: ['id', 'email', 'subscription', 'createdAt'],
+			attributes: [
+				'id',
+				'email',
+				'subscription',
+				'role',
+				'stripeCustomerId',
+				'subscriptionId',
+				'referralCode',
+				'referredById',
+				'createdAt',
+			],
 		});
 	}
 
-	async getAll({ limit, page }: { limit: string; page: string }) {
-		const currentPage = page || 1;
+	async getAll({ limit, page }: PaginationParamsDto) {
+		const currentPage = Number(page) || 1;
 		const collectionLimit = Number(limit) || 10;
 		const offset = (Number(currentPage) - 1) * Number(collectionLimit);
 
 		return await this.userRepository.findAndCountAll({
-			attributes: ['id', 'email', 'subscription', 'createdAt'],
+			attributes: [
+				'id',
+				'email',
+				'subscription',
+				'role',
+				'referralCode',
+				'createdAt',
+			],
 			order: [['createdAt', 'DESC']],
 			limit: collectionLimit,
 			offset,
@@ -55,7 +73,7 @@ export class UserService {
 			throw new NotFoundException(USER_NOT_FOUND);
 		}
 
-		await this.userRepository.destroy({ where: { id } });
+		await user.destroy();
 		return {
 			statusCode: 200,
 			message: `The user ${id} was deleted`,

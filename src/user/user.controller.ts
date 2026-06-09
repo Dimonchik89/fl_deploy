@@ -5,6 +5,7 @@ import {
 	Get,
 	Inject,
 	Param,
+	ParseUUIDPipe,
 	Patch,
 	Query,
 	UseGuards,
@@ -32,6 +33,7 @@ import {
 } from './user.constants';
 import { UNAUTHORIZED_EXAMPLE } from '../app.constants';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationParamsDto } from '../device/dto/pagination-params.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -67,14 +69,15 @@ export class UserController {
 		example: FORBIDDEN_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 	@Get()
-	getAll(@Query() params: { limit: string; page: string }) {
+	getAll(@Query() params: PaginationParamsDto) {
 		return this.userService.getAll(params);
 	}
 
 	@ApiOperation({ summary: 'Find one user' })
+	@ApiParam({ name: 'id', description: 'User ID (UUID)', type: 'string' })
 	@ApiResponse({
 		status: 200,
 		description: 'Get one user',
@@ -95,15 +98,16 @@ export class UserController {
 		description: 'Not Found',
 		example: USER_NOT_FOUND_EXAMPLE,
 	})
-	// @Roles(Role.ADMIN)
-	// @UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@Roles(Role.ADMIN)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@ApiBearerAuth('access_token')
 	@Get(':id')
-	getOne(@Param('id') id: string) {
+	getOne(@Param('id', new ParseUUIDPipe()) id: string) {
 		return this.userService.getOne(id);
 	}
 
 	@ApiOperation({ summary: 'Update one user' })
+	@ApiParam({ name: 'id', description: 'User ID (UUID)', type: 'string' })
 	@ApiResponse({
 		status: 200,
 		description: 'Updated successfully',
@@ -125,15 +129,19 @@ export class UserController {
 		example: USER_NOT_FOUND_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@ApiBearerAuth('access_token')
 	@Patch(':id')
 	@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-	updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+	updateUser(
+		@Param('id', new ParseUUIDPipe()) id: string,
+		@Body() dto: UpdateUserDto,
+	) {
 		return this.userService.updateOne(id, dto);
 	}
 
 	@ApiOperation({ summary: 'Delete user' })
+	@ApiParam({ name: 'id', description: 'User ID (UUID)', type: 'string' })
 	@ApiResponse({
 		status: 200,
 		description: 'Deleted user successfully',
@@ -158,10 +166,10 @@ export class UserController {
 		example: USER_NOT_FOUND_EXAMPLE,
 	})
 	@Roles(Role.ADMIN)
-	@UseGuards(RolesGuard)
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@ApiBearerAuth('access_token')
 	@Delete(':id')
-	deleteUser(@Param('id') id: string) {
+	deleteUser(@Param('id', new ParseUUIDPipe()) id: string) {
 		return this.userService.deleteOne(id);
 	}
 }
